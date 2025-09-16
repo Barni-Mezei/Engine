@@ -2,6 +2,8 @@
  * Dependencies: None
  */
 
+function test() {}
+
 /**
  * @param {Number} min Lower bound of the interval
  * @param {Number} max Upper bound of the interval
