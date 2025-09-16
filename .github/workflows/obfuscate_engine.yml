@@ -1,0 +1,32 @@
+name: Automatically generate engine.min.js on push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'  # Specify the Python version you need
+
+      - name: Run Python script
+        run: python3 obfuscator.py engine.min.js
+
+      - name: Amend the existing commit
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add engine.min.js
+          git commit --amend --no-edit
+          git push --force
