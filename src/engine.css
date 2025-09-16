@@ -1,0 +1,162 @@
+:root {
+    --not-red: #dd4400;
+    --not-green: #88cc00;
+    --not-blue: #00aaff;
+    --not-yellow: #ffdd00;
+
+    --debug-a: #ddd;
+    --debug-gray: #aaa;
+    --debug-bg: #888;
+    --debug-dark-gray: #666;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Main canvas styling */
+canvas#maincv {
+    position: fixed;
+
+    top: 0px;
+    left: 0px;
+
+    width: 100vw;
+    height: 100vh;
+
+    background-color: #000000;
+}
+
+canvas#maincv.pixel-perfect {
+    image-rendering: pixelated;
+}
+
+/* Debug text styling */
+div#debug {
+    position: fixed;
+
+    top: 0px;
+    left: 0px;
+
+    width: fit-content;
+    max-width: 50vw;
+
+    font-family: monospace;
+    font-size: 14px;
+
+    z-index: 999;
+}
+
+div#debug * {
+    margin: 0px;
+    padding: 0px;
+
+    color: #ffffff;
+
+    font-size: inherit;
+    font-family: inherit;
+}
+
+div#debug .item {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: stretch;
+    gap: 5px;
+}
+
+div#debug input {
+    margin: 0px;
+    padding: 0px;
+
+    border: none;
+    border-radius: 5px;
+    outline: none;
+
+
+}
+
+div#debug input:focus {
+    filter: brightness(1.2);
+}
+
+/* Notification container */
+#notContainer {
+    position: fixed;
+    display: flex;
+
+    flex-flow: column wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 5px;
+
+    z-index: 999;
+}
+
+#notContainer .notification {
+    width: auto;
+    height: 30px;
+
+    margin: 0px;
+    padding: 5px;
+
+    border-radius: 10px;
+
+    filter: contrast(1.5) brightness(0.8);
+
+    text-shadow: 0px 0px 10px black;
+
+    color: var(--text-color);
+    background-color: var(--not-normal);
+
+    animation: not-pop-in 0.25s ease;
+}
+
+#notContainer .notification.warning { background-color: var(--not-yelllow); }
+#notContainer .notification.error { background-color: var(--not-red); }
+#notContainer .notification.success { background-color: var(--not-green); }
+#notContainer .notification.info { background-color: var(--not-blue); }
+
+#notContainer .notification.pop-out {
+    animation: not-pop-out 0.25s ease;
+}
+
+#notContainer .notification:first-child {
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}
+
+#notContainer .notification p {
+    margin: 0px;
+    padding: 5px;
+
+    font-size: 1em;
+    font-weight: bold;
+
+    text-align: center;
+}
+
+@keyframes not-pop-in {
+    000% {
+        height: 0px;
+        opacity: 0;
+    }
+
+    100% {
+        height: calc( fit-content );
+        opacity: 1;
+    }
+}
+
+@keyframes not-pop-out {
+    000% {
+        height: calc( fit-content );
+        opacity: 1;
+    }
+    
+    100% {
+        height: 0px;
+        margin-bottom: -15px;
+        opacity: 0;
+    }
+}
