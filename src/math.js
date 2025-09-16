@@ -2,7 +2,7 @@
  * Dependencies: None
  */
 
-function test() {}
+function test2() {}
 
 /**
  * @param {Number} min Lower bound of the interval
