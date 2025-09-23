@@ -85,7 +85,7 @@ class Resource {
     static generateResourceUID(resourceId) {
         Resource._globalResourceId += 1;
 
-        return resourceId + "_" + Resource._globalResourceId + String(Math.random()).substring(2);
+        return resourceId + "_" + Resource._globalResourceId + String(Math.random()).substring(2).substring(0, 8);
     }
 
     /**
@@ -393,7 +393,7 @@ class Texture extends BaseResource {
     cropData = {};
     animData = {};
 
-    #onAnimationEnd = null;
+    #_onAnimationEnd = null;
 
     get isAnimated() {
         return this.animData && this.animData instanceof Object && Object.keys(this.animData).length != 0;
@@ -409,14 +409,14 @@ class Texture extends BaseResource {
      */
     set onAnimationEnd(callback) {
         if (typeof callback != "function") throw Error(`<callback> Must be a callable!`);
-        this.#onAnimationEnd = callback;
+        this.#_onAnimationEnd = callback;
     }
 
     /*
      * Returns with the attached callback function or NULL if none was set
      */
     get onAnimationEnd() {
-        return this.#onAnimationEnd ?? null;
+        return this.#_onAnimationEnd ?? null;
     }
 
     /**
@@ -431,12 +431,31 @@ class Texture extends BaseResource {
 
         super(resourceId);
 
-        this.image = textureData.image.cloneNode(true);
+        this.image = Texture.canvasFromImage(textureData.image, this.cropData);
 
         if ("cropData" in textureData) this.cropData = structuredClone(textureData.cropData);
         if ("animData" in textureData) this.animData = structuredClone(textureData.animData);
 
         if (continer != null) continer[this.uid] = this;
+    }
+
+    static canvasFromImage(image, cropData = null) {
+        let imageWidth = cropData?.width ?? image.width;
+        let imageHeight = cropData?.height ?? image.height;
+
+        let imageOffsetX = cropData?.x ?? 0;
+        let imageOffsetY = cropData?.y ?? 0;
+
+        let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
+        let offCtx = offCanvas.getContext("2d");
+
+        offCtx.drawImage(
+            image,
+            imageOffsetX, imageOffsetY, imageWidth, imageHeight,
+            0, 0, imageHeight, imageHeight
+        );
+
+        return offCanvas;
     }
 
     /**
@@ -610,7 +629,7 @@ class Texture extends BaseResource {
                     this.animData.direction *= -1;
                 }
 
-                if (this.animData.callback != null) this.animData.callback(this);
+                if (this.#_onAnimationEnd != null) this.#_onAnimationEnd(this);
             }
         } else {
             // Playing  backwards
@@ -626,142 +645,10 @@ class Texture extends BaseResource {
                     this.animData.direction *= -1;
                 }
 
-                if (this.animData.callback != null) this.animData.callback(this);
+                if (this.#_onAnimationEnd != null) this.#_onAnimationEnd(this);
             }
         }
     }
-
-    destroy() {
-        this.disabled = true;
-    }
-}
-
-class TileMap {
-    uid = "";
-    disabled = false;
-
-    texture;
-    bitmap;
-
-    constructor(textureId, bitmapId) {
-        this.texture = new Texture(textureId);
-        this.bitmap = new Texture(bitmapId);
-
-        this.sliceTilemaps();
-    }
-
-    /**
-     * Slices tilemaps into tiles, and calculates tile data
-     */
-    sliceTilemaps() {
-        for (let name in textures) {
-            if (!("mapData" in textures[name])) continue;
-
-            // Tile map data
-            let map = textures[name].mapData;
-
-            let bitmapImage = textures[map.bitmapName].image;
-
-            //document.body.appendChild(bitmapImage);
-
-            console.log("Slicing tilemap:", name);
-            console.log("Bitmap:", bitmapImage, bitmapImage.width, bitmapImage.height);
-
-            let bitmapC = document.createElement("canvas");
-            let bitmapCtx = bitmapC.getContext("2d");
-
-            bitmapC.width = map.width * 3;
-            bitmapC.height = map.height * 3;
-
-            bitmapCtx.drawImage(bitmapImage, 0,0, bitmapC.width, bitmapC.height);
-
-            // Add tiles to array
-            for (let y = 0; y < map.height; y++) {
-                for (let x = 0; x < map.width; x++) {
-                    let tileC = document.createElement("canvas");
-                    let tileCtx = tileC.getContext("2d");
-
-                    tileC.width = 3;
-                    tileC.height = 3;
-
-                    // Draw 1 tile from bitmap
-                    tileCtx.drawImage(bitmapC, x*3,y*3, 3,3, 0,0, 3,3);
-                    
-                    //Get tile data (row by row) (filter for red channel only)
-                    let tileData = tileCtx.getImageData(0,0, 3,3);
-                    tileData = tileData.data.filter((a, index) => index % 4 == 0);
-
-                    // Do not push empty tiles
-                    if (!tileData.includes(255)) continue;
-
-                    // Produce eighbour map
-                    let neighbours = [
-                        tileData[0], //Top left
-                        tileData[1], //Top
-                        tileData[2], //Top right
-                        
-                        tileData[5], //Right
-                        
-                        tileData[8], //Bottom right
-                        tileData[7], //Bottom
-                        tileData[6], //Bottom left
-                        
-                        tileData[3], //Left
-                    ]
-
-                    neighbours = neighbours.map((a) => a == 0 ? 0 : 1);
-
-                    textures[name].mapData.tiles.push({
-                        connections: neighbours.join(''),
-                        cropX: x * map.tileWidth,
-                        cropY: y * map.tileHeight,
-                    });
-                }
-            }
-        }
-    }
-
-    /**
-     * Renders the the given texture, at the given coordinates, with scaling and rotating options.
-     * @param {String} name Name of the texture
-     * @param {Array} connections Array of connected edges 0 if edge has no connection, 1 if edge have connection
-     * @param {Number} x Screen X (top-left corner)
-     * @param {Number} y Screen Y (top-left corner)
-     * @param {Number} width Width of the texture
-     * @param {Number} height Height of the texture
-     * @param {Number} rotation In degrees
-     * @param {Number} margin Inset from width and height
-     */
-    drawTileByConnections(name, connections, x, y, width = 16, height = 16, rotation = 0, margin = 0) {
-        if (!(name in textures)) return;
-        if (!("mapData" in textures[name])) return;
-
-        let map = textures[name].mapData;
-        let connectionString = connections.join('');
-
-        if (map.tiles.length == 0) throw new Error(`No tiles found in tilemap '${name}'`);
-
-        //Find tile with correct connections
-        let tileIndex = 0;
-        for (let i = 0; i < map.tiles.length; i++) {
-            let tile = map.tiles[i];
-            if (tile.connections == connectionString) {
-                tileIndex = i;
-                break;
-            }
-        }
-
-        //console.log("Drawing:", name, connectionString, tileIndex);
-        
-        let tileData = textures[name].mapData.tiles[tileIndex];
-        let cropData = [tileData.cropX, tileData.cropY, map.tileWidth, map.tileHeight];
-
-        //console.log("Data:", textures[name].image, x,y, cropData, width,height, rotation, margin);
-
-        drawImageRotated(textures[name].image, x,y, cropData, width,height, rotation, margin);
-    }
-
-    update() {}
 
     destroy() {
         this.disabled = true;

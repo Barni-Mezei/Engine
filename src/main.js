@@ -87,8 +87,8 @@ function _mainLoop() {
         document.getElementById("debug").classList.toggle("hidden");
     }
 
-    document.getElementById("text").textContent += "Pressed: " + input.keys.pressed + "\n";
-    document.getElementById("text").textContent += "J. pre.: " + input.keys.justPressed + "\n";
+    /*document.getElementById("text").textContent += "Pressed: " + input.keys.pressed + "\n";
+    document.getElementById("text").textContent += "J. pre.: " + input.keys.justPressed + "\n";*/
 
     
     updateInputs();
