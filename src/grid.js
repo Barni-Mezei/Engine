@@ -2,6 +2,108 @@
  * Dependencies: vector
  */
 
+
+
+
+
+
+
+
+
+
+
+
+class Grid {
+    // Default cell value
+    defaultValue = null;
+
+    // Size of the grid
+    size = new Vector();
+
+    // The 2D array of cell data
+    #data;
+
+    get width() {
+        return this.size.x;
+    }
+
+    get height() {
+        return this.size.y;
+    }
+
+    constructor(width, height, defaultValue = null) {
+        this.defaultValue = defaultValue;
+
+        for (let y = 0; y < height; y++) {
+            let row = [];
+            for (let x = 0; x < width;x++) {
+                row.push(this.defaultValue);
+            }
+            this.#data.push(row);
+        }
+    }
+
+    isInGrid(x, y) {
+        return x > 0 && x < this.size.x && y > 0 && y < this.size.y;
+    }
+
+
+    setCell(x, y, value) {
+        if (!this.isInGrid(x, y)) return false;
+
+        this.#data[y][x] = value;
+        return true;
+    }
+
+    getCell(x, y, defaultValue = this.defaultValue) {
+        if (!this.isInGrid(x, y)) return defaultValue;
+
+        return this.#data[y][x]
+    }
+
+
+    greedyMesh() {
+        /* On waht layer, output returned, Ggraphic, collision, nav.*/
+    }
+
+
+    /*
+    When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object, meaning every new cell will be the same
+    
+    */
+    resize(newWidth, newHeight, defaultValue = this.defaultValue) {
+        if (newWidth > this.size.x) {
+            for (let y = 0; y < this.#data.length; y++) {
+                let extraValues = Array(newWidth - this.size.x).fill(defaultValue);
+                this.#data[y].concat(extraValues);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Creates a 2 dimensional array with the given size.
  * @param {Number} width Width of the 2D array
@@ -372,7 +474,7 @@ function getBoundingRect(grid, gridWidth = (grid[0] ?? []).length, gridHeight = 
         size: {
             x: (maxX - minX) + 1,
             y: (maxY - minY) + 1,
-        }
+        },
     }
 }
 

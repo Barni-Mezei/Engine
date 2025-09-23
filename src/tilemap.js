@@ -1,131 +1,115 @@
-class TileMap {
-    uid = "";
-    disabled = false;
+/**
+ * Dependencies: grid, vector, resources
+ */
 
+class Tile {
+    id = "";
+    atlasPos = new Vector();
     texture;
-    bitmap;
 
-    constructor(textureId, bitmapId) {
-        this.texture = new Texture(textureId);
-        this.bitmap = new Texture(bitmapId);
-
-        this.sliceTilemaps();
+    constructor(texture, tileId, atlasPos) {
+        this.texture = texture;
+        this.id = tileId;
+        this.atlasPos = atlasPos;
     }
+}
 
-    /**
-     * Slices tilemaps into tiles, and calculates tile data
-     */
-    sliceTilemaps() {
-        for (let name in textures) {
-            if (!("mapData" in textures[name])) continue;
+class TileMap {
+    // Tile atlas
+    atlasId = "";
+    atlasTexture;
+    atlasData;
 
-            // Tile map data
-            let map = textures[name].mapData;
+    // Sliced tiles
+    tiles = {}
 
-            let bitmapImage = textures[map.bitmapName].image;
+    // Actual placed tiles
+    gridTileSize = new Vector(50, 50);
+    grid;
 
-            //document.body.appendChild(bitmapImage);
 
-            console.log("Slicing tilemap:", name);
-            console.log("Bitmap:", bitmapImage, bitmapImage.width, bitmapImage.height);
+    constructor(textureId, atlasData, width, height) {
+        this.atlasId = textureId;
+        this.atlasTexture = new Texture(textureId);
 
-            let bitmapC = document.createElement("canvas");
-            let bitmapCtx = bitmapC.getContext("2d");
-
-            bitmapC.width = map.width * 3;
-            bitmapC.height = map.height * 3;
-
-            bitmapCtx.drawImage(bitmapImage, 0,0, bitmapC.width, bitmapC.height);
-
-            // Add tiles to array
-            for (let y = 0; y < map.height; y++) {
-                for (let x = 0; x < map.width; x++) {
-                    let tileC = document.createElement("canvas");
-                    let tileCtx = tileC.getContext("2d");
-
-                    tileC.width = 3;
-                    tileC.height = 3;
-
-                    // Draw 1 tile from bitmap
-                    tileCtx.drawImage(bitmapC, x*3,y*3, 3,3, 0,0, 3,3);
-                    
-                    //Get tile data (row by row) (filter for red channel only)
-                    let tileData = tileCtx.getImageData(0,0, 3,3);
-                    tileData = tileData.data.filter((a, index) => index % 4 == 0);
-
-                    // Do not push empty tiles
-                    if (!tileData.includes(255)) continue;
-
-                    // Produce eighbour map
-                    let neighbours = [
-                        tileData[0], //Top left
-                        tileData[1], //Top
-                        tileData[2], //Top right
-                        
-                        tileData[5], //Right
-                        
-                        tileData[8], //Bottom right
-                        tileData[7], //Bottom
-                        tileData[6], //Bottom left
-                        
-                        tileData[3], //Left
-                    ]
-
-                    neighbours = neighbours.map((a) => a == 0 ? 0 : 1);
-
-                    textures[name].mapData.tiles.push({
-                        connections: neighbours.join(''),
-                        cropX: x * map.tileWidth,
-                        cropY: y * map.tileHeight,
-                    });
-                }
-            }
-        }
-    }
-
-    /**
-     * Renders the the given texture, at the given coordinates, with scaling and rotating options.
-     * @param {String} name Name of the texture
-     * @param {Array} connections Array of connected edges 0 if edge has no connection, 1 if edge have connection
-     * @param {Number} x Screen X (top-left corner)
-     * @param {Number} y Screen Y (top-left corner)
-     * @param {Number} width Width of the texture
-     * @param {Number} height Height of the texture
-     * @param {Number} rotation In degrees
-     * @param {Number} margin Inset from width and height
-     */
-    drawTileByConnections(name, connections, x, y, width = 16, height = 16, rotation = 0, margin = 0) {
-        if (!(name in textures)) return;
-        if (!("mapData" in textures[name])) return;
-
-        let map = textures[name].mapData;
-        let connectionString = connections.join('');
-
-        if (map.tiles.length == 0) throw new Error(`No tiles found in tilemap '${name}'`);
-
-        //Find tile with correct connections
-        let tileIndex = 0;
-        for (let i = 0; i < map.tiles.length; i++) {
-            let tile = map.tiles[i];
-            if (tile.connections == connectionString) {
-                tileIndex = i;
-                break;
-            }
+        this.atlasData = {
+            rows: null, // Auto complete if tile width is present
+            columns: null,
+            tileWidth: 16, // Autocomplete if rows a re present
+            tileHeight: 16,
+            gapX: 0,
+            gapY: 0,
         }
 
-        //console.log("Drawing:", name, connectionString, tileIndex);
+        this.#setAtlasData(atlasData);
         
-        let tileData = textures[name].mapData.tiles[tileIndex];
-        let cropData = [tileData.cropX, tileData.cropY, map.tileWidth, map.tileHeight];
+        this.tiles = TileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
 
-        //console.log("Data:", textures[name].image, x,y, cropData, width,height, rotation, margin);
-
-        drawImageRotated(textures[name].image, x,y, cropData, width,height, rotation, margin);
+        this.grid = new Grid(width, height, {id: Object.keys(this.tiles)});
     }
 
-    update() {}
+    #setAtlasData(atlasData) {
+        // Set atlas data
+        for (let key in atlasData) {
+            this.atlasData[key] = atlasData[key];
+        }
 
-    destroy() {
-        this.disabled = true;
+        // Complete atlas size
+        if (this.atlasData.rows == null) {
+            this.atlasData.rows = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
+            this.atlasData.columns = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+        }
+
+        // Complete tile size
+        if (this.atlasData.tileWidth == null) {
+            this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.rows;
+            this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.columns;
+        }
+    }
+
+    /**
+     * Slices a tilemap into induvidual tiles
+     * @param {Image} image 
+     * @param {Object} atlasData 
+     * @returns 
+     */
+    static sliceTiles(image, atlasData) {
+        let tiles = {};
+
+        for (let y = 0; y < atlasData.rows; y++) {
+            for (let x = 0; x < atlasData.columns; x++) {
+                let tileId = "tile_" + x + "_" + y;
+                let tileTexture = Texture.canvasFromImage(image, {
+                    width: atlasData.tileWidth,
+                    height: atlasData.tileHeight,
+                    x: atlasData.tileWidth * x + Math.min(0, atlasData.gapX * (x - 1)),
+                    y: atlasData.tileHeight * y + Math.min(0, atlasData.gapY * (y - 1)),
+                });
+
+                tiles[tileId] = new Tile(tileTexture, tileId, new Vector(x, y));
+
+            }
+        }
+
+        return tiles;
+    }
+
+    getTileByAtlasPos(x, y) {
+        for (let tile of this.tiles) {
+            if (tile.atlasPos.isEqual(x, y)) return tile;
+        }
+
+        return null;
+    }
+
+    setTileMeta(tilePos_tileID, key, value) {}
+    getTileMeta(tilePos_tileID, key) {}
+
+    render() {
+        /* for loops with tile offset and scaling*/
+    }
+
+    update() {
+
     }
 }

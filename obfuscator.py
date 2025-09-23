@@ -1,8 +1,10 @@
 import re
 import sys
+from argparse import ArgumentParser
+
 import include_order
 
-def obfuscate_js(file_path : str, separator : str = " ") -> str:
+def obfuscate_js(file_path : str, verbose : bool = False) -> str:
     with open(file_path, 'r') as file:
         js_code = file.read()
 
@@ -19,22 +21,27 @@ def obfuscate_js(file_path : str, separator : str = " ") -> str:
 
     # Replace strings with placeholders
     for i, s in enumerate(strings):
-        js_code = js_code.replace(s, f'__STRING_PLACEHOLDER_{i}__')
+        js_code = js_code.replace(s, f"__STRING_PLACEHOLDER_{i}__")
 
     js_code = re.sub(r'^\s+', '', js_code, flags = re.MULTILINE) # Remove leading whitespace from each line
     js_code = re.sub(r'\}\s*\n', '};\n', js_code)  # Preserve line breaks after closing curly braces
     js_code = re.sub(r'\]\s*\n', '];\n', js_code)  # Preserve line breaks after closing square braces
-    js_code = re.sub(r'(?<!["\'`])\n(?!["\'`])', separator, js_code)  # Remove line breaks outside of strings
+    js_code = re.sub(r'(?<!["\'`])\n(?!["\'`])', "", js_code)  # Remove line breaks outside of strings
+    js_code = re.sub(r'((?<=[^a-zA-Z_#]) (?=[^a-zA-Z_#]))|((?<=[^a-zA-Z_#]) (?=[a-zA-Z_#]))|((?<=[a-zA-Z_#]) (?=[^a-zA-Z_#]))', "", js_code)  # Remove unnescesseary spaces
 
     # Restore the original strings
     for i, s in enumerate(strings):
-        js_code = js_code.replace(f'__STRING_PLACEHOLDER_{i}__', s)
+        js_code = js_code.replace(f"__STRING_PLACEHOLDER_{i}__", s)
 
-    # File name indicator
-    file_name_indicator = f"\n\n/* {file_path} */\n"
+    if verbose:
+        # File content separator
+        content_separator = f"\n\n/* {file_path} */\n"
 
-    #return file_name_indicator + js_code
-    return js_code
+        return content_separator + js_code
+    else:
+        return js_code
+
+
 
 """
 Correct javascript syntax:
@@ -48,34 +55,28 @@ Correct javascript syntax:
 if (true) {
     console.log("");
 }; <- so is this one.
+
+TODO: Remove spaces if one of the neighbouring chars are {[(,;)]}
+like function () {} to function(){}
+
 """
 
-def main(output_file_path : str) -> None:
-    new_line_separator = ""
+def main() -> None:
+    parser = ArgumentParser()
+    parser.add_argument("filename", help="The output file name")
+    parser.add_argument("-v", "--verbose", action="store_true")
 
-    # The order matters!
-    # files_to_be_obfuscated = [
-    #     "src/resourceLoader.js",
-    #     "src/resourceManager.js",
-    #     "src/inputs.js",
-    #     "src/math.js",
-    #     "src/vector.js",
-    #     "src/camera.js",
-    #     "src/pid.js",
-    #     "src/path.js",
-    #     "src/grid.js",
-    #     "src/main.js",
-    # ]
+    args = parser.parse_args()
 
     files_to_be_obfuscated = include_order.get_include_order("./src")
     files_to_be_obfuscated = [f"src/{f}.js" for f in files_to_be_obfuscated]
 
-    file_out = open(output_file_path, "w", encoding = "utf-8")
+    file_out = open(args.filename, "w", encoding = "utf-8")
 
     for i, path in enumerate(files_to_be_obfuscated):
         print(f"Obfuscating (\033[90m{(i+1):>02}/{len(files_to_be_obfuscated):>02}\033[0m): \033[36m{path:<40}\033[0m", end=" . . . ")
         try:
-            file_out.write( obfuscate_js(path, new_line_separator) )
+            file_out.write( obfuscate_js(path, args.verbose) )
         except Exception as e:
             print(f"\033[31mFailed!\n\n\033[0m{e}")
             return
@@ -85,10 +86,8 @@ def main(output_file_path : str) -> None:
     file_out.close()
 
     print()
-    print(f"Obfuscated {len(files_to_be_obfuscated)} files into: \033[36m{output_file_path}\033[0m")
+    print(f"Obfuscated {len(files_to_be_obfuscated)} files into: \033[36m{args.filename}\033[0m")
+
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        main(sys.argv[1])
-    else:
-        print("\033[31mPlease specify a destination file!\033[0m")
+    main()
