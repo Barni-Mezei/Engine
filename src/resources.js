@@ -85,7 +85,7 @@ class Resource {
     static generateResourceUID(resourceId) {
         Resource._globalResourceId += 1;
 
-        return resourceId + "_" + Resource._globalResourceId + String(Math.random()).substring(2);
+        return resourceId + "_" + Resource._globalResourceId + String(Math.random()).substring(2).substring(0, 8);
     }
 
     /**
@@ -393,7 +393,7 @@ class Texture extends BaseResource {
     cropData = {};
     animData = {};
 
-    #onAnimationEnd = null;
+    #_onAnimationEnd = null;
 
     get isAnimated() {
         return this.animData && this.animData instanceof Object && Object.keys(this.animData).length != 0;
@@ -409,14 +409,14 @@ class Texture extends BaseResource {
      */
     set onAnimationEnd(callback) {
         if (typeof callback != "function") throw Error(`<callback> Must be a callable!`);
-        this.#onAnimationEnd = callback;
+        this.#_onAnimationEnd = callback;
     }
 
     /*
      * Returns with the attached callback function or NULL if none was set
      */
     get onAnimationEnd() {
-        return this.#onAnimationEnd ?? null;
+        return this.#_onAnimationEnd ?? null;
     }
 
     /**
@@ -431,12 +431,31 @@ class Texture extends BaseResource {
 
         super(resourceId);
 
-        this.image = textureData.image.cloneNode(true);
+        this.image = Texture.canvasFromImage(textureData.image, this.cropData);
 
         if ("cropData" in textureData) this.cropData = structuredClone(textureData.cropData);
         if ("animData" in textureData) this.animData = structuredClone(textureData.animData);
 
         if (continer != null) continer[this.uid] = this;
+    }
+
+    static canvasFromImage(image, cropData = null) {
+        let imageWidth = cropData?.width ?? image.width;
+        let imageHeight = cropData?.height ?? image.height;
+
+        let imageOffsetX = cropData?.x ?? 0;
+        let imageOffsetY = cropData?.y ?? 0;
+
+        let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
+        let offCtx = offCanvas.getContext("2d");
+
+        offCtx.drawImage(
+            image,
+            imageOffsetX, imageOffsetY, imageWidth, imageHeight,
+            0, 0, imageHeight, imageHeight
+        );
+
+        return offCanvas;
     }
 
     /**
@@ -610,7 +629,7 @@ class Texture extends BaseResource {
                     this.animData.direction *= -1;
                 }
 
-                if (this.animData.callback != null) this.animData.callback(this);
+                if (this.#_onAnimationEnd != null) this.#_onAnimationEnd(this);
             }
         } else {
             // Playing  backwards
@@ -626,7 +645,7 @@ class Texture extends BaseResource {
                     this.animData.direction *= -1;
                 }
 
-                if (this.animData.callback != null) this.animData.callback(this);
+                if (this.#_onAnimationEnd != null) this.#_onAnimationEnd(this);
             }
         }
     }

@@ -1,137 +1,16 @@
-/**
- * Dependencies: resources, objects, vector, physics
- */
-
-class Tile {
-    /**
-     * 
-     * @param {String} id ID (name) of the tile
-     * @param {Vector} pos Position of the tile, relative to the TileMap
-     * @param {Vector} atlasPos Top left corner of the atlas rect
-     * @param {String|Collider2D} collider Tile collider OR "rect" for full-tile collision
-     * @param {Number} navCost Cost of traveling through this tile (-1 to disable travel)
-     * @returns 
-     */
-    static create(id, pos, atlasPos, collider = "rect", navCost = 0) {
-        return {
-            id: id,
-            pos: pos,
-            atlasPos: atlasPos,
-            collider: collider,
-            navCost: navCost,
-        }
-    }
-
-    /**
-     * Retrieves metadata from the specified tile
-     * @param {Object} tile A tile object
-     * @param {String} key The data's key. Leave empty to retrieve every metadata from the tile
-     * @returns {Any} The tile's metadata
-     */
-    static getMeta(tile, key) {
-        if ("meta" in tile) {
-            if (key) {        
-                if (key in tile.meta) return tile.meta[key];
-                return null;
-            }
-            return tile.meta;
-        } else {
-            if (key) return null;
-            return {};
-        }
-    }
-
-    /**
-     * Sets a tile's metadata
-     * @param {Object} tile A tile object
-     * @param {String} key The key to store the value under
-     * @param {Any} value The value to store in to the tile's metadata
-     * @returns The modified tile object
-     */
-    static setMeta(tile, key, value) {
-        if (!("meta" in tile)) {
-            tile.meta = {};
-        }
-        tile.meta[key] = value;
-        return tile;
-    }
-}
-
 class TileMap {
     uid = "";
     disabled = false;
 
-    atlasData = {};
-    atlas;
+    texture;
+    bitmap;
 
-    tiles = {};
+    constructor(textureId, bitmapId) {
+        this.texture = new Texture(textureId);
+        this.bitmap = new Texture(bitmapId);
 
-    // The 2D array of tiles
-    map = [];
-
-    /*
-    
-    TODO tilemap
-
-    load tilemap means load a texture and slice it
-    
-    */
-
-    /**
-     * Slices induvidual tiles from a single atlas texture. Fully transparent tiles are discarded.
-     * @param {String} resourceId The ID of a loaded resource (texture)
-     * @param {Object} atlasData The configuartion of the atlas texture. Default values: `{
-     *     rows: 4,
-     *     columns: 4,
-     *     tileWidth: 16,
-     *     tileHeight: 16,
-     *     gapX: 0,
-     *     gapY: 0,
-     * }`
-     */
-    constructor(resourceId, atlasData) {
-        // Load atlas texture
-        this.atlas = new Texture(resourceId);
-
-        // Default atlas data
-        this.atlasData = {
-            rows: 4,
-            columns: 4,
-            tileWidth: 16,
-            tileHeight: 16,
-            gapX: 0,
-            gapY: 0,
-        };
-
-        // Load atlas data
-        for (let key in atlasData) {
-            this.atlasData[key] = atlasData[key];
-        }
-
-        // Slice atlas in to tiles
-        this.sliceToTiles(this.atlas.image);
+        this.sliceTilemaps();
     }
-
-    sliceToTiles(imageObject, atlasData) {
-
-    }
-    
-    addTile(resourceID, tileData) {this.sliceToTiles(resourceID, atlasData)}
-    
-    addTiles(resourceID, atlasData) {this.sliceToTiles(resourceID, atlasData)}
-
-    // Custom meta
-    setTileMeta(key, value) {}
-    
-    getTileMeta() {}
-
-    // Nav and mesh
-    setTileData(key, value) {}
-
-
-    getTileByName(id) {}
-    getTileByAtlasPos(x, y) {}
-
 
     /**
      * Slices tilemaps into tiles, and calculates tile data

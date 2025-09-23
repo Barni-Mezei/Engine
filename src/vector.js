@@ -132,6 +132,16 @@ class Vector {
     }
 
     /**
+     * Checks if v2's components are equal with this vector
+     * @param {Vector|Number} v2 Another vector
+     * @param {Number} y When setm the function expects 2 nuumbers as X and Y coordinates
+     * @returns {Boolean} Are the component values the same?
+     */
+    isEqual(v2, y = null) {
+        return y == null ? (this.x == v2.x && this.y == v2.y) : (this.x == v2 && this.y == y)
+    }
+
+    /**
      * Returns a copy of the vector
      * @returns {Vector} Returns a NEW VECTOR
      */
