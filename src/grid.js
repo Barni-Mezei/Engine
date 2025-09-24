@@ -79,6 +79,217 @@ class Grid {
             }
         }
     }
+
+
+    /** TODO
+     * Assigns a body index to each of the cells in the given grid, based on the islands it finds.
+     * @param {Array} grid A grid of cells
+     * @param {Number} gridWidth The width of the grid (in cells)
+     * @param {Number} gridHeight The height of the grid (in cells)
+     * @returns {Number} The number of bodies found.
+     */
+    findIslands(grid, startIndex, gridWidth = (grid[0] ?? []).length, gridHeight = grid.length) {
+        /*
+        - clear the body indexes.
+        
+        - get one unassigned cell.
+        floodfill all the connected cells.
+        repeat.
+
+        if no unassigned cells found: done
+        */
+
+        //Reset body colors
+        bodyColors = [];
+
+        //Clear the existing body indexs
+        resetBodyIndexes();
+
+        let unassignedCell = undefined;
+        let currentBodyIndex = startIndex-1;
+
+        while (true) {
+            //Find an unassigned cell
+            unassignedCell = findCellByBodyIndex(grid, -1);
+            if (unassignedCell == undefined) break;
+            
+            let fillQueue = [];
+            let processedCells = [];
+            currentBodyIndex++;
+
+            //console.groupCollapsed("Starting a new body");
+
+            //Process next cell in the fillque and add neighbours (flood fill)
+            let iter = 0;//Safety guard
+            do {
+                let cell = unassignedCell;
+                if (iter != 0) { cell = fillQueue.pop(); }
+
+                processedCells.push(cell);
+                if (getBlockName(cell.type) == "air") continue;
+
+                cell.bodyIndex = currentBodyIndex;
+
+                //console.log("Iter:", iter, "cell:", cell);
+
+                let topCell = undefined;
+                let rightCell = undefined;
+                let bottomCell = undefined;
+                let leftCell = undefined;
+
+                let x = cell.pos.x;
+                let y = cell.pos.y;
+
+                //Get neighbours
+                if (cell.sides[0] == 1) { topCell = getGridCell(x, y - 1, grid); }
+                if (cell.sides[1] == 1) { rightCell = getGridCell(x + 1, y, grid); }
+                if (cell.sides[2] == 1) { bottomCell = getGridCell(x, y + 1, grid); }
+                if (cell.sides[3] == 1) { leftCell = getGridCell(x - 1, y, grid); }
+
+                //Remove connection if it is not in both ways
+                if (topCell != undefined && topCell.sides[2] == 0) topCell = undefined;
+                if (rightCell != undefined && rightCell.sides[3] == 0) rightCell = undefined;
+                if (bottomCell != undefined && bottomCell.sides[0] == 0) bottomCell = undefined;
+                if (leftCell != undefined && leftCell.sides[1] == 0) leftCell = undefined;
+
+                //Add to queue if not added yet.
+                if (topCell != undefined && processedCells.indexOf(topCell) == -1) fillQueue.push(topCell);
+                if (rightCell != undefined && processedCells.indexOf(rightCell) == -1) fillQueue.push(rightCell);
+                if (bottomCell != undefined && processedCells.indexOf(bottomCell) == -1) fillQueue.push(bottomCell);
+                if (leftCell != undefined && processedCells.indexOf(leftCell) == -1) fillQueue.push(leftCell);
+
+                iter++;
+            } while (iter < gridWidth*gridHeight && fillQueue.length > 0);
+
+            //console.log("Body finished with blocks:", iter);
+
+            //console.groupEnd();
+        };
+
+        let numOfBodies = (currentBodyIndex - startIndex) + 1;
+
+        //Add colors
+        for (let i = 0; i < numOfBodies; i++) { bodyColors.push(getColorHUE(i / numOfBodies)); }
+
+        return numOfBodies;
+    }
+
+
+
+
+    /**TODO: copyGrid
+     * Returns a new grid with the given size, and the contents copied from the main grid
+     * @param {Array} grid A grid of cells
+     * @param {Object} pos An object with X and Y keys
+     * @param {Object} size An object with X and Y keys
+     * @returns {Array} 
+     */
+    copyFromGrid(grid, pos, size) {
+        return create2DArray(size.x, size.y, function (x, y) {
+            let originalCell = getGridCell(pos.x + x, pos.y + y, grid);
+
+            if (originalCell == undefined) {
+                return new GridCell(x, y, getBlockType("air"));
+            } else {
+                let cell = new GridCell(x, y, originalCell.type);
+
+                return cell;
+            }
+        });
+    }
+
+
+    /** TODO: pasteGrid
+     * Places the blocks from blockArry to the build grid.
+     * @param {Number} gridX X grid-coordinate of the top-left cell
+     * @param {Number} gridY Y grid-coordinate of the top-left cell
+     * @param {Array<gridCell>} blockArray A 2d array of gridCells
+     * @param {Number} width Size of blockArray
+     * @param {Number} height Size of blockArray
+     */
+    mergeToGridFromArray(gridX, gridY, blockArray, width, height, ignoreAir = true) {
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let cell = getGridCell(x, y, blockArray);
+                if (cell == undefined) continue;
+                if (ignoreAir && getBlockName(cell.type) == "air") continue;
+
+                let gridCellX = gridX + x;
+                let gridCellY = gridY + y;
+                let gridCell = deepCopy(getGridCell(gridCellX, gridCellY));
+                if (gridCell == undefined) continue; //Skip out of bounds cells
+
+                let blockNameUnder = getBlockName(gridCell.type);
+                let blockNamePlaced = getBlockName(cell.type);
+
+                setGridCell(gridCellX, gridCellY, cell.type);
+            }
+        }
+    }
+
+
+    /**
+     * Returns a new grid, with the same size of the original, but replaces the blocks that does not pass the bodyIndex check, with air.
+     * @param {Array} grid A grid of cells
+     * @param {Number} filterFn The filter function. Passed with: (x, y, cell) where the cell is tha cell object it self.
+     * @param {Number} gridWidth The width of the grid (in cells)
+     * @param {Number} gridHeight The height of the grid (in cells)
+     */
+    filterCells(grid, filterFn, gridWidth = (grid[0] ?? []).length, gridHeight = grid.length) {
+        let newGrid = create2DArray(gridWidth, gridHeight, function (x, y) {
+            let cell = getGridCell(x, y, grid);
+            if (cell == undefined) return;
+            if (filterFn(x, y, cell)) {
+                return cell;
+            } else {
+                return new GridCell(x, y, getBlockType("air"));
+            }
+        });
+
+        return newGrid;
+    }
+
+
+    /**TODO: Used area
+     * Returns the dimensions of the bounding rect of all used cells in the grid (specify tile considered as AIR)
+     * @param {Array} grid A grid of cells
+     * @param {Number} gridWidth The width of the grid (in cells)
+     * @param {Number} gridHeight The height of the grid (in cells)
+     * @returns {Object} Returns an objects with the keys: 'pos' and 'size', both containing an X and a Y value.
+     */
+    getBoundingRect(grid, gridWidth = (grid[0] ?? []).length, gridHeight = grid.length) {
+        let minX = gridWidth;
+        let minY = gridHeight;
+        let maxX = 0;
+        let maxY = 0;
+
+        for (let y = 0; y < gridHeight; y++) {
+            for (let x = 0; x < gridWidth; x++) {
+                let cell = getGridCell(x, y, grid);
+                if (cell == undefined || getBlockName(cell.type) == "air") continue;
+
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+
+        return {
+            pos: {
+                x: minX,
+                y: minY,
+            },
+
+            size: {
+                x: (maxX - minX) + 1,
+                y: (maxY - minY) + 1,
+            },
+        }
+    }
+
+
+
 }
 
 
@@ -324,99 +535,6 @@ function resetBodyIndexes() {
             cell.bodyIndex = -1;
         }
     }
-}
-
-/**
- * Assigns a body index to each of the cells in the given grid, based on the islands it finds.
- * @param {Array} grid A grid of cells
- * @param {Number} gridWidth The width of the grid (in cells)
- * @param {Number} gridHeight The height of the grid (in cells)
- * @returns {Number} The number of bodies found.
- */
-function calculateBodies(grid, startIndex, gridWidth = (grid[0] ?? []).length, gridHeight = grid.length) {
-    /*
-    - clear the body indexes.
-    
-    - get one unassigned cell.
-    floodfill all the connected cells.
-    repeat.
-
-    if no unassigned cells found: done
-    */
-
-    //Reset body colors
-    bodyColors = [];
-
-    //Clear the existing body indexs
-    resetBodyIndexes();
-
-    let unassignedCell = undefined;
-    let currentBodyIndex = startIndex-1;
-
-    while (true) {
-        //Find an unassigned cell
-        unassignedCell = findCellByBodyIndex(grid, -1);
-        if (unassignedCell == undefined) break;
-        
-        let fillQueue = [];
-        let processedCells = [];
-        currentBodyIndex++;
-
-        //console.groupCollapsed("Starting a new body");
-
-        //Process next cell in the fillque and add neighbours (flood fill)
-        let iter = 0;//Safety guard
-        do {
-            let cell = unassignedCell;
-            if (iter != 0) { cell = fillQueue.pop(); }
-
-            processedCells.push(cell);
-            if (getBlockName(cell.type) == "air") continue;
-
-            cell.bodyIndex = currentBodyIndex;
-
-            //console.log("Iter:", iter, "cell:", cell);
-
-            let topCell = undefined;
-            let rightCell = undefined;
-            let bottomCell = undefined;
-            let leftCell = undefined;
-
-            let x = cell.pos.x;
-            let y = cell.pos.y;
-
-            //Get neighbours
-            if (cell.sides[0] == 1) { topCell = getGridCell(x, y - 1, grid); }
-            if (cell.sides[1] == 1) { rightCell = getGridCell(x + 1, y, grid); }
-            if (cell.sides[2] == 1) { bottomCell = getGridCell(x, y + 1, grid); }
-            if (cell.sides[3] == 1) { leftCell = getGridCell(x - 1, y, grid); }
-
-            //Remove connection if it is not in both ways
-            if (topCell != undefined && topCell.sides[2] == 0) topCell = undefined;
-            if (rightCell != undefined && rightCell.sides[3] == 0) rightCell = undefined;
-            if (bottomCell != undefined && bottomCell.sides[0] == 0) bottomCell = undefined;
-            if (leftCell != undefined && leftCell.sides[1] == 0) leftCell = undefined;
-
-            //Add to queue if not added yet.
-            if (topCell != undefined && processedCells.indexOf(topCell) == -1) fillQueue.push(topCell);
-            if (rightCell != undefined && processedCells.indexOf(rightCell) == -1) fillQueue.push(rightCell);
-            if (bottomCell != undefined && processedCells.indexOf(bottomCell) == -1) fillQueue.push(bottomCell);
-            if (leftCell != undefined && processedCells.indexOf(leftCell) == -1) fillQueue.push(leftCell);
-
-            iter++;
-        } while (iter < gridWidth*gridHeight && fillQueue.length > 0);
-
-        //console.log("Body finished with blocks:", iter);
-
-        //console.groupEnd();
-    };
-
-    let numOfBodies = (currentBodyIndex - startIndex) + 1;
-
-    //Add colors
-    for (let i = 0; i < numOfBodies; i++) { bodyColors.push(getColorHUE(i / numOfBodies)); }
-
-    return numOfBodies;
 }
 
 /**

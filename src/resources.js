@@ -439,6 +439,9 @@ class Texture extends BaseResource {
         if (continer != null) continer[this.uid] = this;
     }
 
+    /* TODO: When cropping, this is not sonsidering the animation, which creates a differently sized area to crop.
+    (with wrapping it is more complex) Solutions: do not crop if anmimated OR crop out the whole animation region OR store each frame as a separate image */
+
     static canvasFromImage(image, cropData = null) {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
