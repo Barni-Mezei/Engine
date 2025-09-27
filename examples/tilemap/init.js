@@ -15,5 +15,6 @@ setKeybind("d", "d");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
-Resource.loadTexture("/examples/res/tiles_packed.png", "terrain");
+Resource.loadTexture("../res/small_tiles.png", "terrain");
+Resource.loadFile("./tilemap.json", "terrain_tilemap");
 Resource.startLoading();

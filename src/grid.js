@@ -47,6 +47,7 @@ class Grid {
 
         // Grid data
         this.defaultValue = defaultValue;
+        this.#data = [];
 
         for (let y = 0; y < height; y++) {
             let row = [];
@@ -70,7 +71,7 @@ class Grid {
      * @returns {Boolean} Is the cell position inside of the grid?
      */
     isInGrid(x, y) {
-        return x > 0 && x < this.size.x && y > 0 && y < this.size.y;
+        return x >= 0 && x < this.size.x && y >= 0 && y < this.size.y;
     }
 
     /**
@@ -98,7 +99,7 @@ class Grid {
     getCell(x, y, defaultValue = this.defaultValue) {
         if (!this.isInGrid(x, y)) return defaultValue;
 
-        return this.#data[y][x]
+        return this.#data[y][x];
     }
 
     /*
@@ -158,6 +159,18 @@ class Grid {
 
 
     /**
+     * This function will fill the entire grid with the specified value
+     * @param {Any} cellValue The value to fill the grid with
+     */
+    fill(cellValue) {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                this.#data[y][x] = cellValue;
+            }
+        }
+    }
+
+    /**
      * This function will iterate over every cell in the grid, from top left to bottom right,
      * and calls the provided callback function, with the cell passed in as a parameter
      * @param {Function} callback The function which will get called on every cell
@@ -165,7 +178,7 @@ class Grid {
     forEach(callback) {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                callback(this.#data[y][x]);
+                callback( this.#data[y][x] );
             }
         }
     }
@@ -394,10 +407,6 @@ class Grid {
             },
         }
     }
-
-    render() {}
-
-    update() {}
 }
 
 

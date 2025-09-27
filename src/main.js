@@ -146,13 +146,13 @@ document.body.onload = function (e) {
     _start();
 }
 
-function _start() {
+async function _start() {
     if (!_bodyLoaded) return; // document.body is not loaded
     if (Resource.loaded < Resource.maxLoadables) return; // Not all resources are loaded
     if (frameCounter != 0) return; // Main loop is already running
 
     // Call init function, before starting the main loop
-    if (typeof(init) === typeof(Function)) init();
+    if (typeof(init) === typeof(Function)) await init();
 
     // Start the main game loop
     _mainLoop();
