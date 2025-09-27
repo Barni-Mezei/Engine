@@ -49,15 +49,12 @@ Correct javascript syntax:
 - Arrays and objects: [
     a,
     b,
-    c, <- the last line MUST have a colon.
+    c, <- the last line MUST have a comma.
 ]; <- this semicolon, will be added in this script, automatically
 
 if (true) {
     console.log("");
 }; <- so is this one.
-
-TODO: Remove spaces if one of the neighbouring chars are {[(,;)]}
-like function () {} to function(){}
 
 """
 

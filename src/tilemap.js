@@ -71,9 +71,11 @@ class TileMap extends Object2D {
         }
 
         this.#setAtlasData(atlasData);
-        this.#updateSize();
+        this._updateTileMapSize();
         
         this.tiles = TileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
+
+        this._updateTileSizes();
 
         this.grid = new Grid(width, height, {
             id: Object.keys(this.tiles)[0],
@@ -109,10 +111,39 @@ class TileMap extends Object2D {
     /**
      * Calculates the size of the bounding box of the tilemap, in world space
      */
-    #updateSize() {
+    _updateTileMapSize() {
         // Update map size
         this.size.x = this.atlasData.columns * this.atlasData.tileWidth;
         this.size.y = this.atlasData.rows * this.atlasData.tileHeight;
+    }
+
+    /**
+     * Udates the tile pattern sizes, to match the tilemap's, onscreen tile size
+     */
+    _updateTileSizes() {
+        // Update tile pattern sizes
+        for (let tileId in this.tiles) {
+            let tile = this.tiles[tileId];
+
+            let offCanvas = new OffscreenCanvas(this.gridTileSize.x, this.gridTileSize.y);
+            let offCtx = offCanvas.getContext("2d");
+            offCtx.imageSmoothingEnabled = !c.isPixelPerfect;
+
+            offCtx.drawImage(
+                tile.texture,
+                0, 0, offCanvas.width, offCanvas.height
+            );
+
+            this.tiles[tileId].texture = offCanvas;
+            this.tiles[tileId].pattern = offCtx.createPattern(offCanvas, "repeat");
+        }
+    }
+
+    /**
+     * Returns with an temporary Id for a tile, based on its atlas position
+     */
+    static _getTileIdFromCoords(x, y) {
+        return "tile_" + x + "_" + y;
     }
 
     /**
@@ -126,7 +157,7 @@ class TileMap extends Object2D {
 
         for (let y = 0; y < atlasData.rows; y++) {
             for (let x = 0; x < atlasData.columns; x++) {
-                let tileId = "tile_" + x + "_" + y;
+                let tileId = TileMap._getTileIdFromCoords(x, y);
                 let tileTexture = Texture.canvasFromImage(image, {
                     width: atlasData.tileWidth,
                     height: atlasData.tileHeight,
@@ -146,21 +177,88 @@ class TileMap extends Object2D {
 
         let newTilemap = new TileMap(atlasTextureId, importData.atlasData, width, height);
 
-        console.dir(newTilemap.tiles);
+        let tileChars = {};
 
+        // Import tiles from the atlas texture
         if ("tiles" in importData) {
             for (let tileId in importData.tiles) {
                 let currentTile = importData.tiles[tileId];
+                tileChars[currentTile.char] = currentTile.id;
                 newTilemap.renameTile(tileId, currentTile.id);
                 for (let key in currentTile.meta) {
                     newTilemap.setTileMeta(currentTile.id, key, currentTile.meta[key]);
                 }
             }
+
+            // Default to top left tile
+            newTilemap.grid.defaultValue = newTilemap.getTileByAtlasPos(new Vector()).toObject();
         }
 
-        console.dir(newTilemap.tiles);
+        // Import tiles to the tile grid
+        if ("grid" in importData) {
+            newTilemap.grid.resize(importData.grid.width, importData.grid.height);
+
+            for (let y = 0; y < importData.grid.data.length; y++) {
+                let row = importData.grid.data[y];
+                for (let i = 0; i < row.length; i += 2) {
+                    let tileChar = row[i] + row[i+1];
+                    let tilePos = new Vector(i/2, y);
+                    let tileId = tileChars[tileChar];
+
+                    newTilemap.setTileAt(tilePos, tileId);
+                }
+            }
+        }
 
         return newTilemap;
+    }
+
+    exportTilemap() {
+        let out = {
+            atlasData: this.atlasData,
+            tiles: {},
+            grid: {
+                width: this.grid.width,
+                height: this.grid.height,
+                data: [],
+            },
+        }
+
+        let tileChars = {};
+
+        // Add tiles to the export
+        let i = 0;
+        for (let tileId in this.tiles) {
+            let tile = this.tiles[tileId];
+            let defaultTileId = TileMap._getTileIdFromCoords(tile.atlasPos.x, tile.atlasPos.y);
+            if (tile.id == defaultTileId) continue;
+
+            out.tiles[defaultTileId] = {
+                id: tile.id,
+                meta: tile.meta,
+            }
+
+            // 8697 possible tile IDs (from chr: 33 '!' to chr: 126 '~')
+            tileChars[tileId] = String.fromCharCode(33 + Math.floor(i/93)) + String.fromCharCode(33 + (i % 93));
+
+            i++;
+        }
+
+        // Export grid data
+        let oldY = 0;
+        let row = "";
+
+        this.grid.forEach(function(x, y, tile) {
+            if (y != oldY) {
+                out.grid.data.push(row);
+                row = "";
+                oldY = y;
+            }
+
+            row += tileChars[tile.id];
+        });
+
+        return out;
     }
 
     /**
@@ -171,18 +269,18 @@ class TileMap extends Object2D {
     renameTile(tileId, newTileId) {
         if (!(tileId in this.tiles)) return;
 
+        // Update tiles on the tilemap
+        this.grid.map(function (x, y, tile) {
+            if (tile.id == tileId) tile.id = newTileId;
+            return tile
+        });
+
         // Add new tile
         this.tiles[newTileId] = this.tiles[tileId];
         this.tiles[newTileId].id = newTileId;
 
         // Remove old tile
         delete this.tiles[tileId];
-
-        // Update tiles on the tilemap
-        this.grid.map(function (tile) {
-            if (tile.id == tileId) tile.id = newTileId;
-            return tile
-        });
     }
 
     /**
@@ -210,7 +308,6 @@ class TileMap extends Object2D {
      */
     fill(tileId) {
         this.grid.fill(this.getTileById(tileId).toObject());
-        console.dir(this.grid);
     }
 
     /**
@@ -257,7 +354,8 @@ class TileMap extends Object2D {
      * @param {Any} value The value to set
      */
     setTileMetaAt(atlasPos, key, value) {
-        for (let tile of this.tiles) {
+        for (let tileId in this.tiles) {
+            let tile = this.tiles[tileId];
             if (tile.atlasPos.isEqual(atlasPos)) {
                 tile.meta[key].meta = value;
             };
@@ -282,7 +380,8 @@ class TileMap extends Object2D {
      * @returns {Tile|null} The tile from the atlas, at the specified position, or null if no tile was found
      */
     getTileByAtlasPos(atlasPos) {
-        for (let tile of this.tiles) {
+        for (let tileId in this.tiles) {
+            let tile = this.tiles[tileId];
             if (tile.atlasPos.isEqual(atlasPos)) return tile;
         }
 
@@ -308,17 +407,21 @@ class TileMap extends Object2D {
     }
 
     render() {
-        /* for loops with tile offset and scaling*/
+        let self = this;
 
-        //console.log(this.grid);
+        this.grid.forEach(function (x, y, tile) {
+            let tilePos = self.pos.add(new Vector(x, y).mult(self.gridTileSize));
 
-        this.grid.forEach(function (tile) {
-            //console.log(tile);
-            ctx.fillStyle = this.getTileById(tile.id).pattern;
-            ctx.fillRect(this.po);
+            /*ctx.drawImage(
+                self.getTileById(tile.id).texture,
+                ...tilePos.toArray(), 45, 45
+            );*/
+
+            ctx.fillStyle = self.getTileById(tile.id).pattern;
+            ctx.fillRect(...tilePos.toArray(), ...self.gridTileSize.toArray());
         });
-        //debugger
 
+        debugger;
     }
 
     update() {

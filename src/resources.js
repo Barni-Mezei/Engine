@@ -463,7 +463,6 @@ class Texture extends BaseResource {
 
         this.image = Texture.canvasFromImage(textureData.image, this.cropData, this.isAnimated);
 
-
         if (continer != null) continer[this.uid] = this;
     }
 
@@ -848,5 +847,12 @@ class FileResource {
         let fileData = Resource.getFile(fileId);
 
         return fileData.metaData.type;
+    }
+
+    static downloadFile(content, name) {
+        let link = document.createElement("a");
+        link.download = name;
+        link.href = content;
+        link.click();
     }
 }

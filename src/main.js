@@ -29,7 +29,7 @@ let time = {
     delta: 0, // Delta time between frames
 
     buffer: [], // Frame time buffer
-    bufferSize: 10, // Maximum length of the buffer
+    bufferSize: 5, // Maximum length of the buffer
 
     measureFrame: 0,
     measureDelta: 0,

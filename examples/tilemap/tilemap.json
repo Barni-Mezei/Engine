@@ -8,6 +8,7 @@
 
     "tiles": {
         "tile_0_0": {
+            "char": "!0",
             "id": "grass_block",
             "meta": {
                 "autotile": "gggg"
@@ -15,6 +16,7 @@
         },
 
         "tile_1_0": {
+            "char": "!1",
             "id": "water",
             "meta": {
                 "autotile": "wwww"
@@ -22,6 +24,7 @@
         },
 
         "tile_2_0": {
+            "char": "!2",
             "id": "path_v",
             "meta": {
                 "autotile": "pgpg"
@@ -29,6 +32,7 @@
         },
 
         "tile_3_0": {
+            "char": "!3",
             "id": "path_h",
             "meta": {
                 "autotile": "gpgp"
@@ -36,6 +40,7 @@
         },
 
         "tile_0_1": {
+            "char": "!4",
             "id": "corner_bottom_right",
             "meta": {
                 "autotile": "gppg"
@@ -43,6 +48,7 @@
         },
 
         "tile_1_1": {
+            "char": "!5",
             "id": "corner_bottom_left",
             "meta": {
                 "autotile": "ggpp"
@@ -50,6 +56,7 @@
         },
 
         "tile_2_1": {
+            "char": "!6",
             "id": "corner_top_right",
             "meta": {
                 "autotile": "ppgg"
@@ -57,6 +64,7 @@
         },
 
         "tile_3_1": {
+            "char": "!7",
             "id": "corner_top_left",
             "meta": {
                 "autotile": "pggp"
@@ -64,23 +72,39 @@
         },
 
         "tile_0_2": {
+            "char": "!8",
             "id": "rock",
             "meta": {}
         },
 
         "tile_1_2": {
+            "char": "!9",
             "id": "grass",
             "meta": {}
         },
 
         "tile_2_2": {
+            "char": "!a",
             "id": "mushroom",
             "meta": {}
         },
 
         "tile_0_3": {
+            "char": "!b",
             "id": "grass_block2",
             "meta": {}
         }
+    },
+
+    "grid": {
+        "width": 5,
+        "height": 5,
+        "data": [
+            "!3!3!5!0!0",
+            "!0!0!2!0!0",
+            "!0!0!6!3!3",
+            "!1!1!0!0!0",
+            "!1!1!1!0!0"
+        ]
     }
 }

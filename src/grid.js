@@ -33,6 +33,10 @@ class Grid {
         return this.size.y;
     }
 
+    get data() {
+        return this.#data;
+    }
+
     /**
      * 
      * @param {Number} width Width of the grid, in number of cells
@@ -52,7 +56,7 @@ class Grid {
         for (let y = 0; y < height; y++) {
             let row = [];
             for (let x = 0; x < width;x++) {
-                row.push(this.defaultValue);
+                row.push(structuredClone(this.defaultValue));
             }
             this.#data.push(row);
         }
@@ -61,6 +65,31 @@ class Grid {
         this.hashFunction = hashFunction;
         this.hashFunction ??= function (tile) {
             return tile;
+        }
+    }
+
+    /**
+     * Converts the grid, into an array, and returns with it
+     * @param {String} mode Determines, the format of the output array. Possible values can be:
+     * - "1d": The returned array is a single dimansional array, containing cells, from each row immediately appended after eachother
+     * - "2d" (default): The returned array, is an array of rows, which are arrays of cells
+     * @returns {Array} All the cells in the grid
+     */
+    toArray(mode = "2d") {
+        switch (mode) {
+            default:
+            case "2d":
+                return this.#data;
+                break;
+
+            case "1d":
+                let out = [];
+                for (let row of this.#data) {
+                    out = out.concat(row);
+                }
+
+                return out;
+                break;
         }
     }
 
@@ -85,6 +114,7 @@ class Grid {
         if (!this.isInGrid(x, y)) return false;
 
         this.#data[y][x] = value;
+
         return true;
     }
 
@@ -102,8 +132,9 @@ class Grid {
         return this.#data[y][x];
     }
 
-    /*
-    When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object, meaning every new cell will be the same
+    /* TODO: When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object,
+    meaning every new cell will be the same
+    Solved, with structuredClone, which will not clone everything...
     */
     
     /**
@@ -115,13 +146,13 @@ class Grid {
      */
     resize(newWidth, newHeight, defaultValue = this.defaultValue) {
         let originalSize = this.size.copy();
-        this.size.x = new Vector(newWidth, newHeight);
+        this.size = new Vector(newWidth, newHeight);
 
         // Add to width
         if (newWidth > originalSize.x) {
             for (let y = 0; y < this.#data.length; y++) {
-                let extraValues = Array(newWidth - originalSize.x).fill(defaultValue);
-                this.#data[y].concat(extraValues);
+                let extraValues = Array(newWidth - originalSize.x).fill(structuredClone(defaultValue));
+                this.#data[y] = this.#data[y].concat(extraValues);
             }
         }
 
@@ -140,7 +171,7 @@ class Grid {
         // Add to height
         if (newHeight > originalSize.y) {
             for (let i = 0; i < newHeight - originalSize.y; i++) {
-                let extraRow = Array(this.size.x).fill(defaultValue);
+                let extraRow = Array(this.size.x).fill(structuredClone(defaultValue));
                 this.#data.push(extraRow);
             }
         }
@@ -165,7 +196,7 @@ class Grid {
     fill(cellValue) {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                this.#data[y][x] = cellValue;
+                this.#data[y][x] = structuredClone(cellValue);
             }
         }
     }
@@ -173,12 +204,15 @@ class Grid {
     /**
      * This function will iterate over every cell in the grid, from top left to bottom right,
      * and calls the provided callback function, with the cell passed in as a parameter
-     * @param {Function} callback The function which will get called on every cell
+     * @param {Function} callback The function which will get called on every cell. Parameters:
+     * - x: The X coordinate of the current cell
+     * - y: The Y coordinate of the current cell
+     * - cell: The cell itself
      */
     forEach(callback) {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                callback( this.#data[y][x] );
+                callback( x, y, this.#data[y][x] );
             }
         }
     }
@@ -190,7 +224,7 @@ class Grid {
     map(callback) {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                this.#data[y][x] = callback(this.#data[y][x]);
+                this.#data[y][x] = callback(x, y, this.#data[y][x]);
             }
         }
     }
