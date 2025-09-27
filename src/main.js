@@ -64,6 +64,9 @@ let frameCounter = 0;
  */
 let camera = new Camera(new Vector());
 
+/**
+ * Whenever the dosument is loaded already
+ */
 let _bodyLoaded = false;
 
 function _mainLoop() {
@@ -144,9 +147,9 @@ document.body.onload = function (e) {
 }
 
 function _start() {
-    if (!_bodyLoaded) return;
-    if ((Resource.maxLoadables - Resource.loaded) != 0) return;
-    if (frameCounter != 0) return;
+    if (!_bodyLoaded) return; // document.body is not loaded
+    if (Resource.loaded < Resource.maxLoadables) return; // Not all resources are loaded
+    if (frameCounter != 0) return; // Main loop is already running
 
     // Call init function, before starting the main loop
     if (typeof(init) === typeof(Function)) init();

@@ -6,11 +6,14 @@ class Tile {
     id = "";
     atlasPos = new Vector();
     texture;
+    pattern;
 
     constructor(texture, tileId, atlasPos) {
         this.texture = texture;
         this.id = tileId;
         this.atlasPos = atlasPos;
+
+        this.pattern = ctx.createPattern(texture, "repeat");
     }
 }
 
@@ -107,6 +110,15 @@ class TileMap {
 
     render() {
         /* for loops with tile offset and scaling*/
+
+        this.grid.forEach(function (tile) {
+            console.log(tile)
+            /*ctx.beginPath();
+            ctx.rect();
+            ctx.stroke();*/
+        });
+
+        debugger
     }
 
     update() {

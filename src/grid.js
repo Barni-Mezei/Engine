@@ -20,6 +20,8 @@ class Grid {
     // Size of the grid
     size = new Vector();
 
+    hashFunction;
+
     // The 2D array of cell data
     #data;
 
@@ -31,7 +33,19 @@ class Grid {
         return this.size.y;
     }
 
-    constructor(width, height, defaultValue = null) {
+    /**
+     * 
+     * @param {Number} width Width of the grid, in number of cells
+     * @param {Number} height Height of the grid, in number of cells
+     * @param {Any} defaultValue The default value, to put in the place of a grid cell, when no other value is specified
+     * @param {Function} hashFunction A function, that is called on every cell, and is used to compare them. (Should return a number or a string)
+     * is passed in as an argument (used for comparing cells)
+     */
+    constructor(width, height, defaultValue = null, hashFunction = null) {
+        // Grid size
+        this.size = new Vector(width, height);
+
+        // Grid data
         this.defaultValue = defaultValue;
 
         for (let y = 0; y < height; y++) {
@@ -41,13 +55,31 @@ class Grid {
             }
             this.#data.push(row);
         }
+
+        // Hashing function
+        this.hashFunction = hashFunction;
+        this.hashFunction ??= function (tile) {
+            return tile;
+        }
     }
 
+    /**
+     * Checks if the specified cell position is inside of the bounds of this grid, or not
+     * @param {Number} x The X position of a cell
+     * @param {Number} y The Y position of a cell
+     * @returns {Boolean} Is the cell position inside of the grid?
+     */
     isInGrid(x, y) {
         return x > 0 && x < this.size.x && y > 0 && y < this.size.y;
     }
 
-
+    /**
+     * Sets a cell's value inside of the grid
+     * @param {Number} x The X coordinate of the cell
+     * @param {Number} y the Y coordinate of the cell
+     * @param {Any} value The value to set the grid cell to
+     * @returns {Boolean} Was the operation succesful? (Returns false if the position was out of the grid)
+     */
     setCell(x, y, value) {
         if (!this.isInGrid(x, y)) return false;
 
@@ -55,40 +87,118 @@ class Grid {
         return true;
     }
 
+    /**
+     * Returns the value in the cell, at the specified coordinates, or the grid's default value
+     * @param {Number} x The X coordinate of the grid cell
+     * @param {Number} y the Y coordinate of the grid cell
+     * @param {Any} defaultValue The value to return with, if the tile does not exists
+     * (Applies only to this function, does not set this.defaultValue, but does overwrite it)
+     * @returns {Any} The value of the cell at the specified position, or the default value
+     */
     getCell(x, y, defaultValue = this.defaultValue) {
         if (!this.isInGrid(x, y)) return defaultValue;
 
         return this.#data[y][x]
     }
 
+    /*
+    When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object, meaning every new cell will be the same
+    */
+    
+    /**
+     * Resizes the grid, to the new specified size. New tiles will default to this.defaultValue, and cropped tiles, will disappear forever
+     * @param {Number} newWidth The new width of the grid, in number of cells
+     * @param {Number} newHeight The new height of the grid, in number of cells
+     * @param {Any} defaultValue The value to set empty tiles to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
+     * @returns {Vector} The original size of the grid, in number of cells
+     */
+    resize(newWidth, newHeight, defaultValue = this.defaultValue) {
+        let originalSize = this.size.copy();
+        this.size.x = new Vector(newWidth, newHeight);
 
-    greedyMesh() {
-        /* On waht layer, output returned, Ggraphic, collision, nav.*/
+        // Add to width
+        if (newWidth > originalSize.x) {
+            for (let y = 0; y < this.#data.length; y++) {
+                let extraValues = Array(newWidth - originalSize.x).fill(defaultValue);
+                this.#data[y].concat(extraValues);
+            }
+        }
+
+        // Remove from width
+        if (newWidth < originalSize.x) {
+            for (let y = 0; y < this.#data.length; y++) {
+                // Keep values, only in the new width boundary
+                let newRow = [];
+                for (let i = 0; i < newWidth; i++) {newRow[i] = this.#data[y][i]}
+
+                this.#data[y] = newRow;
+            }
+        }
+
+
+        // Add to height
+        if (newHeight > originalSize.y) {
+            for (let i = 0; i < newHeight - originalSize.y; i++) {
+                let extraRow = Array(this.size.x).fill(defaultValue);
+                this.#data.push(extraRow);
+            }
+        }
+
+        // Remove from height
+        if (newHeight > originalSize.y) {
+            // Keep values, only in the new width boundary
+            let newData = [];
+            for (let i = 0; i < newHeight; i++) {newData[i] = this.#data[i]}
+
+            this.#data = newData;
+        }
+
+        return originalSize;
     }
 
 
-    /*
-    When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object, meaning every new cell will be the same
-    
-    */
-    resize(newWidth, newHeight, defaultValue = this.defaultValue) {
-        if (newWidth > this.size.x) {
-            for (let y = 0; y < this.#data.length; y++) {
-                let extraValues = Array(newWidth - this.size.x).fill(defaultValue);
-                this.#data[y].concat(extraValues);
+    /**
+     * This function will iterate over every cell in the grid, from top left to bottom right,
+     * and calls the provided callback function, with the cell passed in as a parameter
+     * @param {Function} callback The function which will get called on every cell
+     */
+    forEach(callback) {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                callback(this.#data[y][x]);
             }
         }
     }
 
-
-    /** TODO
-     * Assigns a body index to each of the cells in the given grid, based on the islands it finds.
-     * @param {Array} grid A grid of cells
-     * @param {Number} gridWidth The width of the grid (in cells)
-     * @param {Number} gridHeight The height of the grid (in cells)
-     * @returns {Number} The number of bodies found.
+    /**
+     * Works very similar to the built in `Array.prototype.map` function. The return value of the callback will be set, as the new cell value
+     * @param {Function} callback The function which will get called on every cell
      */
-    findIslands(grid, startIndex, gridWidth = (grid[0] ?? []).length, gridHeight = grid.length) {
+    map(callback) {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                this.#data[y][x] = callback(this.#data[y][x]);
+            }
+        }
+    }
+
+    /**
+     * Applies greedy meshing on the full grid, using the provided hashing function, or the default hashing function
+     * @param {String} defaultAxis The first axis to start expanding the box on.
+     * (When set to X the boxes may be more flat. Keep in mind that the number of resulting boxes will stay the same, in both settings)
+     * @param {Function} hashFunction A function, that is called on every cell, and is used to compare them. (Should return a number or a string)
+     * @returns {Array} The array of regions, this function inds
+     */
+    greedyMesh(firstAxis = "x", hashFunction = null) {
+    }
+
+    /**
+     * Assigns an index to every  cells in the grid, based on the island they are connected to
+     * @param {Function} hashFunction A function, that is called on every cell, and is used to compare them. (Should return a number or a string)
+     * @param {Any} defaultValue The value to set empty tiles to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
+     * @returns {Grid} A new grid, where each cell, holds an island's ID or, defaultValue
+     */
+    findIslands(defaultValue = this.defaultValue, hashFunction = this.hashFunction) {
         /*
         - clear the body indexes.
         
@@ -99,10 +209,10 @@ class Grid {
         if no unassigned cells found: done
         */
 
-        //Reset body colors
+        // Reset body colors
         bodyColors = [];
 
-        //Clear the existing body indexs
+        // Clear the existing body indexs
         resetBodyIndexes();
 
         let unassignedCell = undefined;
@@ -174,17 +284,14 @@ class Grid {
         return numOfBodies;
     }
 
-
-
-
-    /**TODO: copyGrid
+    /**TODO: copyGrid (area start XY, width, height, defaults to entire grid)
      * Returns a new grid with the given size, and the contents copied from the main grid
      * @param {Array} grid A grid of cells
      * @param {Object} pos An object with X and Y keys
      * @param {Object} size An object with X and Y keys
      * @returns {Array} 
      */
-    copyFromGrid(grid, pos, size) {
+    copyGrid(grid, pos, size) {
         return create2DArray(size.x, size.y, function (x, y) {
             let originalCell = getGridCell(pos.x + x, pos.y + y, grid);
 
@@ -199,7 +306,7 @@ class Grid {
     }
 
 
-    /** TODO: pasteGrid
+    /** TODO: Rename to "pasteGrid", accepts a merger function, with old and vew cell as input, an return will be set
      * Places the blocks from blockArry to the build grid.
      * @param {Number} gridX X grid-coordinate of the top-left cell
      * @param {Number} gridY Y grid-coordinate of the top-left cell
@@ -207,7 +314,7 @@ class Grid {
      * @param {Number} width Size of blockArray
      * @param {Number} height Size of blockArray
      */
-    mergeToGridFromArray(gridX, gridY, blockArray, width, height, ignoreAir = true) {
+    pasteGrid(gridX, gridY, blockArray, width, height, ignoreAir = true) {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 let cell = getGridCell(x, y, blockArray);
@@ -228,7 +335,7 @@ class Grid {
     }
 
 
-    /**
+    /**TODO: Replaced by this.map() ?
      * Returns a new grid, with the same size of the original, but replaces the blocks that does not pass the bodyIndex check, with air.
      * @param {Array} grid A grid of cells
      * @param {Number} filterFn The filter function. Passed with: (x, y, cell) where the cell is tha cell object it self.
@@ -250,7 +357,7 @@ class Grid {
     }
 
 
-    /**TODO: Used area
+    /**TODO: Used area, or island bounding rect, determined by function??
      * Returns the dimensions of the bounding rect of all used cells in the grid (specify tile considered as AIR)
      * @param {Array} grid A grid of cells
      * @param {Number} gridWidth The width of the grid (in cells)
@@ -288,8 +395,9 @@ class Grid {
         }
     }
 
+    render() {}
 
-
+    update() {}
 }
 
 
@@ -313,7 +421,91 @@ class Grid {
 
 
 
+function findIslands(defaultValue = this.defaultValue, hashFunction = this.hashFunction) {
+    /*
+    - clear the body indexes.
+    
+    - get one unassigned cell.
+    floodfill all the connected cells.
+    repeat.
 
+    if no unassigned cells found: done
+    */
+
+    // Reset body colors
+    bodyColors = [];
+
+    // Clear the existing body indexs
+    resetBodyIndexes();
+
+    let unassignedCell = undefined;
+    let currentBodyIndex = startIndex-1;
+
+    while (true) {
+        //Find an unassigned cell
+        unassignedCell = findCellByBodyIndex(grid, -1);
+        if (unassignedCell == undefined) break;
+        
+        let fillQueue = [];
+        let processedCells = [];
+        currentBodyIndex++;
+
+        //console.groupCollapsed("Starting a new body");
+
+        //Process next cell in the fillque and add neighbours (flood fill)
+        let iter = 0;//Safety guard
+        do {
+            let cell = unassignedCell;
+            if (iter != 0) { cell = fillQueue.pop(); }
+
+            processedCells.push(cell);
+            if (getBlockName(cell.type) == "air") continue;
+
+            cell.bodyIndex = currentBodyIndex;
+
+            //console.log("Iter:", iter, "cell:", cell);
+
+            let topCell = undefined;
+            let rightCell = undefined;
+            let bottomCell = undefined;
+            let leftCell = undefined;
+
+            let x = cell.pos.x;
+            let y = cell.pos.y;
+
+            //Get neighbours
+            if (cell.sides[0] == 1) { topCell = getGridCell(x, y - 1, grid); }
+            if (cell.sides[1] == 1) { rightCell = getGridCell(x + 1, y, grid); }
+            if (cell.sides[2] == 1) { bottomCell = getGridCell(x, y + 1, grid); }
+            if (cell.sides[3] == 1) { leftCell = getGridCell(x - 1, y, grid); }
+
+            //Remove connection if it is not in both ways
+            if (topCell != undefined && topCell.sides[2] == 0) topCell = undefined;
+            if (rightCell != undefined && rightCell.sides[3] == 0) rightCell = undefined;
+            if (bottomCell != undefined && bottomCell.sides[0] == 0) bottomCell = undefined;
+            if (leftCell != undefined && leftCell.sides[1] == 0) leftCell = undefined;
+
+            //Add to queue if not added yet.
+            if (topCell != undefined && processedCells.indexOf(topCell) == -1) fillQueue.push(topCell);
+            if (rightCell != undefined && processedCells.indexOf(rightCell) == -1) fillQueue.push(rightCell);
+            if (bottomCell != undefined && processedCells.indexOf(bottomCell) == -1) fillQueue.push(bottomCell);
+            if (leftCell != undefined && processedCells.indexOf(leftCell) == -1) fillQueue.push(leftCell);
+
+            iter++;
+        } while (iter < gridWidth*gridHeight && fillQueue.length > 0);
+
+        //console.log("Body finished with blocks:", iter);
+
+        //console.groupEnd();
+    };
+
+    let numOfBodies = (currentBodyIndex - startIndex) + 1;
+
+    //Add colors
+    for (let i = 0; i < numOfBodies; i++) { bodyColors.push(getColorHUE(i / numOfBodies)); }
+
+    return numOfBodies;
+}
 
 /**
  * Creates a 2 dimensional array with the given size.

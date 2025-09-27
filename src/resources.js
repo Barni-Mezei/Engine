@@ -211,6 +211,33 @@ class Resource {
     }
 
     /**
+     * Reads a json file that list all resources, that need loading
+     * @param {String} path The path to the file, with the list of the resources
+     */
+    static async loadFromFile(path) {
+        let importFile = await fetch(path);
+        let importData = await importFile.json();
+
+        if ("textures" in importData) {
+            for (let resource of importData.textures) {
+                Resource.loadTexture(resource.path, resource.id, ...resource.params);
+            }
+        }
+
+        if ("sounds" in importData) {
+            for (let resource of importData.sounds) {
+                Resource.loadSound(resource.path, resource.id, ...resource.params);
+            }
+        }
+
+        if ("files" in importData) {
+            for (let resource of importData.files) {
+                Resource.loadFile(resource.path, resource.id, ...resource.params);
+            }
+        }
+    }
+
+    /**
      * Searches the loaded resources, and returns with the requested one
      * @param {String} textureId A unique resource ID
      * @returns {Texture} The resource with the specified ID
@@ -431,23 +458,31 @@ class Texture extends BaseResource {
 
         super(resourceId);
 
-        this.image = Texture.canvasFromImage(textureData.image, this.cropData);
-
         if ("cropData" in textureData) this.cropData = structuredClone(textureData.cropData);
         if ("animData" in textureData) this.animData = structuredClone(textureData.animData);
+
+        this.image = Texture.canvasFromImage(textureData.image, this.cropData, this.isAnimated);
+
 
         if (continer != null) continer[this.uid] = this;
     }
 
-    /* TODO: When cropping, this is not sonsidering the animation, which creates a differently sized area to crop.
+    /* TODO: When cropping, this is not considering the animation, which creates a differently sized area to crop.
     (with wrapping it is more complex) Solutions: do not crop if anmimated OR crop out the whole animation region OR store each frame as a separate image */
 
-    static canvasFromImage(image, cropData = null) {
+    static canvasFromImage(image, cropData = null, isAnimated = false) {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
 
         let imageOffsetX = cropData?.x ?? 0;
         let imageOffsetY = cropData?.y ?? 0;
+
+        if (isAnimated) {
+            imageWidth = image.width;
+            imageHeight = image.height;
+            imageOffsetX = 0;
+            imageOffsetY = 0;
+        }
 
         let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
         let offCtx = offCanvas.getContext("2d");

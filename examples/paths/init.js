@@ -22,9 +22,10 @@ camera.zoom = 0.75;
 
 addDebugOption("boxes", "Show boxes", "bool", false);
 
-Resource.loadTexture("../res/characters.png", "solider_idle", [0, 0, 32, 32]);
+/*Resource.loadTexture("../res/characters.png", "solider_idle", [0, 0, 32, 32]);
 Resource.loadTexture("../res/characters.png", "solider_walk", [0, 0, 32, 32], [4, 0.15]);
 Resource.loadTexture("../res/characters.png", "solider_jump", [32*4, 0, 32, 32], [4, 0.15]);
-Resource.loadFile("./settings.json", "settings");
+Resource.loadFile("./settings.json", "settings");*/
 
-Resource.startLoading();
+Resource.maxLoadables = 1;
+Resource.loadFromFile("./imports.json").then(() => {Resource.maxLoadables -= 1; Resource.startLoading()} );

@@ -1,11 +1,11 @@
 let paths = [];
 
-let soliders = [];
+let soldiers = [];
 let positions = [];
 
 let formationRotation = 0;
 
-class Solider extends AnimatedSprite {
+class Soldier extends AnimatedSprite {
     agent;
 
     name;
@@ -15,9 +15,9 @@ class Solider extends AnimatedSprite {
 
     constructor(pathFollow, color) {
         let animations = {
-            "idle": new Texture("solider_idle"),
-            "walk": new Texture("solider_walk"),
-            "jump": new Texture("solider_jump"),
+            "idle": new Texture("soldier_idle"),
+            "walk": new Texture("soldier_walk"),
+            "jump": new Texture("soldier_jump"),
         }
 
         super(new Vector(), new Vector(100), animations, color);
@@ -27,7 +27,7 @@ class Solider extends AnimatedSprite {
 
         this.agent = pathFollow;
 
-        this.name = new Label2D(`Solider ${soliders.length}`);
+        this.name = new Label2D(`Soldier ${soldiers.length}`);
         this.name.setSize(16);
     }
 
@@ -98,26 +98,26 @@ async function init() {
 
     settings.gameSettings = await FileResource.getJson("settings");
 
-    for (let i = 0; i < settings.gameSettings.solider_count; i++) {
+    for (let i = 0; i < settings.gameSettings.soldier_count; i++) {
         let newPos = pol(
             (i % settings.gameSettings.width) * settings.gameSettings.column_gap - ((settings.gameSettings.width-1) * settings.gameSettings.column_gap / 2),
             Math.floor(i / settings.gameSettings.width) * settings.gameSettings.row_gap
         );
 
-        let newSolider = new Solider(
+        let newSoldier = new Soldier(
             new PathFollow(4),
             randomColor(20, 200, 20, 200, 20, 200)
         );
 
-        newSolider.agent.canFinish = false;
+        newSoldier.agent.canFinish = false;
         let newPath = new Path([
             Vector.fromAngle(newPos.angle, newPos.length).add(Vector.fromObject(input.mouse)),
             Vector.fromAngle(newPos.angle, newPos.length).add(Vector.fromObject(input.mouse)),
         ]);
 
-        newPath.addAgent(newSolider.agent);
+        newPath.addAgent(newSoldier.agent);
 
-        soliders.push(newSolider);
+        soldiers.push(newSoldier);
         paths.push(newPath);
         positions.push(newPos);
     }
@@ -168,7 +168,7 @@ function render() {
 
     // Draw target positions
     paths.forEach((p, index) => {
-        let targetpoint = p.points[p.points.length - 1].add(new Vector(soliders[index].centerOffset.x, soliders[index].topOffset));
+        let targetpoint = p.points[p.points.length - 1].add(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset));
 
         targetpoint = camera.w2c(targetpoint);
 
@@ -178,7 +178,7 @@ function render() {
         ctx.fill();
     });
 
-    soliders.forEach(s => {
+    soldiers.forEach(s => {
         s.render();
     });
 }
@@ -191,9 +191,9 @@ function update() {
 
             p.removePointFromStart();
             p.removePointFromEnd();
-            p.addPointAtStart(soliders[index].pos);
-            p.addPointAtEnd(camera.c2w(Vector.fromObject(input.mouse)).add(point).sub(new Vector(soliders[index].centerOffset.x, soliders[index].topOffset)));
-            soliders[index].agent.lastPointIndex = 0;
+            p.addPointAtStart(soldiers[index].pos);
+            p.addPointAtEnd(camera.c2w(Vector.fromObject(input.mouse)).add(point).sub(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset)));
+            soldiers[index].agent.lastPointIndex = 0;
         });
     }
 
@@ -201,9 +201,9 @@ function update() {
         paths.forEach((p, index) => {
             p.removePointFromStart();
             p.removePointFromEnd();
-            p.addPointAtStart(soliders[index].pos);
+            p.addPointAtStart(soldiers[index].pos);
             p.addPointAtEnd( new Vector(randFloat(20, c.width/camera.realZoom-20), randFloat(20, c.height/camera.realZoom-100)) );
-            soliders[index].agent.lastPointIndex = 0;
+            soldiers[index].agent.lastPointIndex = 0;
         });
     }
 
@@ -211,12 +211,12 @@ function update() {
     if (isKeyPressed("d")) formationRotation += 2;
 
     if (isKeyPressed("w")) {
-        soliders.forEach(s => {
+        soldiers.forEach(s => {
             s.agent.speed += 1;
         });
     };
     if (isKeyPressed("s")) {
-        soliders.forEach(s => {
+        soldiers.forEach(s => {
             s.agent.speed -= 1;
         });
     };
@@ -237,12 +237,12 @@ function update() {
         p.update();
     });
 
-    // Update soliders
-    soliders.forEach(s => {
+    // Update soldiers
+    soldiers.forEach(s => {
         s.update();
     });
 
-    document.getElementById("text").textContent += "Speed: " + soliders[0]?.agent.speed + "\n";
+    document.getElementById("text").textContent += "Speed: " + soldiers[0]?.agent.speed + "\n";
 
     //camera.lookAt(new Vector(0, 0), true);
     camera.update();

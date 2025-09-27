@@ -1,4 +1,4 @@
-let s = new Sprite(c.center, new Vector(100), "solider_walk", "#ff0000");
+let s = new Sprite(c.center, new Vector(100), "soldier_walk", "#ff0000");
 
 s.origin.x = 25;
 

@@ -1,0 +1,35 @@
+{
+    "textures": [
+        {
+            "id": "soldier_idle",
+            "path": "../res/characters.png",
+            "params": [
+                [0, 0, 32, 32]
+            ]
+        },
+        {
+            "id": "soldier_walk",
+            "path": "../res/characters.png",
+            "params": [
+                [0, 0, 32, 32],
+                [4, 0.15]
+            ]
+        },
+        {
+            "id": "soldier_jump",
+            "path": "../res/characters.png",
+            "params": [
+                [128, 0, 32, 32],
+                [4, 0.15]
+            ]
+        }
+    ],
+    "sounds": [],
+    "files": [
+        {
+            "id": "settings",
+            "path": "./settings.json",
+            "params": []
+        }
+    ]
+}
