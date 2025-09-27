@@ -849,10 +849,21 @@ class FileResource {
         return fileData.metaData.type;
     }
 
-    static downloadFile(content, name) {
-        let link = document.createElement("a");
-        link.download = name;
-        link.href = content;
-        link.click();
+    /**
+     * Downloads a file to the client
+     * @param {String} fileName The name of the downloaded file
+     * @param {String} plainText The data to put in to the file (must be a string)
+     */
+    static downloadFile(fileName, plainText) {
+        let blob = new Blob([plainText], { type: "text/plain" });
+        let jsonObjectUrl = URL.createObjectURL(blob);
+
+        const anchorEl = document.createElement("a");
+        anchorEl.href = jsonObjectUrl;
+        anchorEl.download = fileName;
+
+        anchorEl.click();
+
+        URL.revokeObjectURL(jsonObjectUrl);
     }
 }

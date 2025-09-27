@@ -2,6 +2,16 @@
  * Dependencies: grid, vector, resources
  */
 
+/**
+ * TOOD:
+ * layers [grid, grid2]
+ * special layers: collision, navigation
+ * 
+ * tileChars, either separate array, or saved in the tile itself
+ * 
+ * A* pathfinding
+ */
+
 class Tile {
     id = "";
     atlasPos = new Vector();
@@ -213,7 +223,12 @@ class TileMap extends Object2D {
         return newTilemap;
     }
 
-    exportTilemap() {
+    /**
+     * Returns with a json object, containing all necesary data from importing it later
+     * @param {String|null} fileName (optional) The file name, to download under 
+     * @returns 
+     */
+    exportTilemap(fileName = null) {
         let out = {
             atlasData: this.atlasData,
             tiles: {},
@@ -258,7 +273,11 @@ class TileMap extends Object2D {
             row += tileChars[tile.id];
         });
 
-        return out;
+        if (fileName) {
+            FileResource.downloadFile( fileName + ".json", JSON.stringify(out) );
+        } else {
+            return out;
+        }
     }
 
     /**
