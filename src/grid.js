@@ -167,14 +167,10 @@ class Grid {
         // Add to width
         if (newWidth > originalSize.x) {
             for (let y = 0; y < this.#data.length; y++) {
-                //let extraValues = Array(newWidth - originalSize.x).fill(structuredClone(defaultValue));
-
                 let extraValues = [];
                 for (let i = 0; i < newWidth - originalSize.x; i++) {
                     extraValues.push(structuredClone(defaultValue));
                 }
-
-
 
                 this.#data[y] = this.#data[y].concat(extraValues);
             }

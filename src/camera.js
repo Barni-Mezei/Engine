@@ -3,21 +3,46 @@
  */
 
 class Camera {
-    #realPos = new Vector();
     pos = new Vector(); // Target value
+    #realPos = new Vector(); // Current value
 
-    #realZoom = 1;
     zoom = 1; // Target value
-
+    #realZoom = 1; // Current value
+    
     /**
-     * Is the camera position rounded to the nearest finite floating point number
+     * Camera settings
      */
-    isFinite = false;
+    settings = {
+       /**
+        * Is the camera position rounded to the nearest integer
+        */
+       rounded: false,
+       
+       /**
+        * Is the camera position rounded to the nearest finite floating point number
+        */
+       finite: false,
 
-    /**
-     * Is the camera position rounded to the nearest integer (Set to null to not round)
-     */
-    rounded = null;
+       /**
+        * Speed, which the camera reaches it's target zoom level (-1 for instant zooming)
+        */
+       zoomSpeed: -1,
+
+       /**
+        * Speed, which the camera reaches it's target  position (-1 for instant motion)
+        */
+       glideSpeed: -1,
+
+       /**
+        * Minimum allowed zoomlevel
+        */
+       minZoom: 0.1,
+
+       /**
+        * Maximum allowed zoom level
+        */
+       maxZoom: 5,
+    }
 
     /**
      * The the true current zoom level of the camera
@@ -36,54 +61,90 @@ class Camera {
     /**
      * Creates a new camera
      * @param {Vector} pos The position of the camera
-     * @param {Number} zoom The zoom level of the camera, default is 1
+     * @param {Number} zoom The starting zoom level of the camera
+     * @param {Object} settings The settings of the camera, in the following format:
+     * - rounded: (false) Is the camera's position rounded to the nearest integer?
+     * - finite: (false) Is the camera's position rounded to the nearest finite floating point number?
+     * - zoomSpeed: (-1) The zoom interpolation speed of the camera (-1 to make it instant)
+     * - glideSpeed: (-1) The position interpolation speed of the camera (-1 to make it instant)
+     * - minZoom: (0.1) The minimum allowed zoom level for the camera
+     * - maxZoom: (5) The maximum allowed zoom level for the camera
      */
-    constructor(pos, zoom = 1) {
+    constructor(pos, zoom = 1, settings = {}) {
         this.pos = pos;
         this.#realPos = pos;
 
         this.zoom = zoom;
         this.#realZoom = zoom;
+
+        // Default settings
+        this.settings = {
+            rounded: false,
+            finite: false,
+
+            zoomSpeed: -1,
+            glideSpeed: -1,
+
+            minZoom: 0.1,
+            maxZoom: 5,
+        }
+
+        for (let key in settings) {
+            this.settings[key] = settings[key];
+        }
     }
 
     /**
      * Sets the camera's zoom level to the specified amount
-     * @param {Number} zoom The target zoom level of the camera
-     * @param {Boolean} smooth Smoothly change the zoom level, or make the change instantly
+     * @param {Number} zoom The target zoom level
+     * @param {Boolean} instant If set to true, the action will be executed instantly, instead of waiting for the next camera update
      */
-    setZoom(zoom, smooth = false) {
-        this.zoom = clamp(zoom, settings.camera.minZoom, settings.camera.maxZoom);
+    setZoom(zoom, instant = false) {
+        this.zoom = clamp(zoom, this.settings.minZoom, this.settings.maxZoom);
 
-        if (!smooth) this.#realZoom = this.zoom;
+        if (instant) this.#realZoom = this.zoom;
     }
 
     /**
-     * Places the camera over the specified position, so that is in he middle of the screen
-     * @param {Vector} pos The world space position to center the camera on
-     * @param {Boolean} smooth Smoothly change the position, or make the change instantly
+     * Places the camera over the specified position, so that the position is in he middle of the screen
+     * @param {Vector} pos The position to center the camera on (world space)
+     * @param {Boolean} instant If set to true, the action will be executed instantly, instead of waiting for the next camera update
      */
-    lookAt(pos, smooth = false) {
-        let center = new Vector(c.width / this.#realZoom, c.height / this.#realZoom).mult(0.5);
+    lookAt(pos, instant = false) {
+        let center = new Vector(c.width / this.zoom, c.height / this.zoom).mult(0.5);
         this.pos = pos.sub(center);
 
-        if (!smooth) this.#realPos = this.pos;
+        if (instant) this.#realPos = this.pos;
+    }
+
+    clampValues() {
+        this.#realZoom = clamp(this.#realZoom, this.settings.minZoom, this.settings.maxZoom);
+        this.zoom = clamp(this.zoom, this.settings.minZoom, this.settings.maxZoom);
     }
 
     update() {
-        this.#realPos = Vector.lerp(this.#realPos, this.pos, settings.camera.slideSpeed);
+        if (this.settings.zoomSpeed == -1) {
+            this.#realZoom = this.zoom;
+        } else {
+            this.#realZoom = lerp(this.#realZoom, this.zoom, this.settings.zoomSpeed);
+        }
 
-        this.#realZoom = lerp(this.#realZoom, this.zoom, settings.camera.zoomSpeed);
+        if (this.settings.glideSpeed == -1) {
+            this.#realPos = this.pos;
+        } else {
+            this.#realPos = Vector.lerp(this.#realPos, this.pos, this.settings.glideSpeed);
+        }
 
-        if (this.isFinite) {
+        if (this.settings.finite) {
             this.#realPos = new Vector(makeFinite(this.#realPos.x), makeFinite(this.#realPos.y) );
             this.#realZoom = makeFinite(this.#realZoom);
         }
 
-        if (this.rounded != null) {
+        if (this.settings.rounded) {
             this.#realPos = this.#realPos.round(this.rounded);
         }
 
-        this.#realZoom = clamp(this.#realZoom, settings.camera.minZoom, settings.camera.maxZoom);
+        this.clampValues();
     }
 
     /**
@@ -112,7 +173,9 @@ class Camera {
         ctx.stroke();
     }
 
-    /* Camera transform functions */
+    /*
+     * Camera transform functions
+     */
 
     /* World to camera space convertions */
 
@@ -226,6 +289,30 @@ class Camera {
     // Aliases
     get worldToScreenY() { return this.worldToCamY.bind(this); }
     get w2cY() { return this.worldToCamY.bind(this); }
+
+    /* Full */
+
+    /**
+     * Translates world space coordinates and sizes to camera (screen) space coordinates and sizes
+     * @param {Vector} pos A world space position
+     * @param {Vector} size A world space size
+     * @returns {Array} An array containing the camera (screen) space values for the passed in values [x, y, width, height]
+     */
+    w2cf(pos, size) {
+        return [...this.w2c(pos).toArray(), ...this.w2cs(size).toArray()];
+    }
+
+    /**
+     * Translates world space coordinates and sizes to camera (screen) space coordinates and sizes
+     * @param {Number} x A world space X coordinate 
+     * @param {Number} y A world space Y coordinate 
+     * @param {Number} w A world space width 
+     * @param {Number} h A world space height 
+     * @returns {Array} An array containing the camera (screen) space values for the passed in values [x, y, width, height]
+     */
+    w2cfXY(x, y, w, h) {
+        return [...this.w2cXY(x, y), ...this.w2csXY(w, h)];
+    }
 
 
 

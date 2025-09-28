@@ -1,5 +1,5 @@
 /**
- * Dependencies: grid, vector, resources
+ * Dependencies: grid, vector, resources, camera
  */
 
 /**
@@ -13,7 +13,8 @@
  */
 
 class Tile {
-    id = "";
+    id = ""; // Tile name
+    char = null; // Compacted tile ID
     atlasPos = new Vector();
     meta = {};
     texture;
@@ -26,6 +27,7 @@ class Tile {
 
         this.meta = {};
         this.pattern = ctx.createPattern(texture, "repeat");
+        this.char = null;
     }
 
     toObject() {
@@ -81,11 +83,9 @@ class SimpleTileMap extends Object2D {
         }
 
         this.#setAtlasData(atlasData);
-        this._updateTileMapSize();
         
         this.tiles = SimpleTileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
 
-        this._updateTileSizes();
 
         this.grid = new Grid(width, height, {
             id: Object.keys(this.tiles)[0],
@@ -93,6 +93,9 @@ class SimpleTileMap extends Object2D {
         }, function (tile) {
             return tile.id;
         });
+
+        this._updateTileMapSize();
+        this._updateTileSizes();
     }
 
     /**
@@ -123,8 +126,8 @@ class SimpleTileMap extends Object2D {
      */
     _updateTileMapSize() {
         // Update map size
-        this.size.x = this.atlasData.columns * this.atlasData.tileWidth;
-        this.size.y = this.atlasData.rows * this.atlasData.tileHeight;
+        this.size.x = this.grid.width * this.gridTileSize.x;
+        this.size.y = this.grid.height * this.gridTileSize.y;
     }
 
     /**
@@ -197,15 +200,21 @@ class SimpleTileMap extends Object2D {
                 newTilemap.renameTile(tileId, currentTile.id);
                 for (let key in currentTile.meta) {
                     newTilemap.setTileMeta(currentTile.id, key, currentTile.meta[key]);
+                    newTilemap.tiles[currentTile.id].char = currentTile?.char ?? null;
                 }
             }
 
-            // Default to top left tile
-            newTilemap.grid.defaultValue = newTilemap.getTileByAtlasPos(new Vector()).toObject();
+            // Default to the first tile
+            newTilemap.grid.defaultValue = Object.values(newTilemap.tiles)[0].toObject();
         }
 
         // Import tiles to the tile grid
         if ("grid" in importData) {
+            // Set default from the grid
+            if ("default" in importData.grid) {
+                newTilemap.grid.defaultValue = newTilemap.tiles[importData.grid.default].toObject();
+            }
+
             newTilemap.grid.resize(importData.grid.width, importData.grid.height);
 
             for (let y = 0; y < importData.grid.data.length; y++) {
@@ -235,6 +244,7 @@ class SimpleTileMap extends Object2D {
             grid: {
                 width: this.grid.width,
                 height: this.grid.height,
+                default: this.grid.defaultValue.id,
                 data: [],
             },
         }
@@ -248,13 +258,18 @@ class SimpleTileMap extends Object2D {
             let defaultTileId = SimpleTileMap._getTileIdFromCoords(tile.atlasPos.x, tile.atlasPos.y);
             if (tile.id == defaultTileId) continue;
 
+            if (tile.char == null) {
+                // 8697 possible tile IDs (from chr: 33 '!' to chr: 126 '~')
+                tileChars[tileId] = String.fromCharCode(33 + Math.floor(i/93)) + String.fromCharCode(33 + (i % 93));
+            } else {
+                tileChars[tileId] = tile.char;
+            }
+
             out.tiles[defaultTileId] = {
+                char: tileChars[tileId],
                 id: tile.id,
                 meta: tile.meta,
             }
-
-            // 8697 possible tile IDs (from chr: 33 '!' to chr: 126 '~')
-            tileChars[tileId] = String.fromCharCode(33 + Math.floor(i/93)) + String.fromCharCode(33 + (i % 93));
 
             i++;
         }
@@ -272,6 +287,9 @@ class SimpleTileMap extends Object2D {
 
             row += tileChars[tile.id];
         });
+
+        // Add last row
+        if (row.length > 0) out.grid.data.push(row);
 
         if (fileName) {
             FileResource.downloadFile( fileName + ".json", JSON.stringify(out) );
@@ -425,7 +443,7 @@ class SimpleTileMap extends Object2D {
         return this.grid.getCell(tilePos.x, tilePos.y, null)?.meta ?? null;
     }
 
-    render() {
+    render(gridColor = null, gridThickness = null) {
         let self = this;
 
         this.grid.forEach(function (x, y, tile) {
@@ -433,14 +451,40 @@ class SimpleTileMap extends Object2D {
 
             /*ctx.drawImage(
                 self.getTileById(tile.id).texture,
-                ...tilePos.toArray(), 45, 45
+                ...camera.w2c(tilePos).round().toArray(), ...camera.w2cs(self.gridTileSize).round().toArray()
             );*/
 
-            ctx.fillStyle = self.getTileById(tile.id).pattern;
-            ctx.fillRect(...tilePos.toArray(), ...self.gridTileSize.toArray());
+            ctx.drawImage(
+                self.getTileById(tile.id).texture,
+                ...camera.w2cf(tilePos.round(), self.gridTileSize.round())
+            );
+
+            //ctx.fillStyle = self.getTileById(tile.id).pattern;
+            //ctx.fillRect(...camera.w2c(tilePos).round().toArray(), ...camera.w2cs(self.gridTileSize).round().toArray());
         });
 
-        debugger;
+        if (gridColor != null) {
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = camera.w2csX(gridThickness);
+            ctx.lineJoin = "butt";
+            ctx.lineCap = "butt";
+
+            // Horizontal lines
+            for (let y = 0; y <= this.grid.height; y++) {
+                ctx.beginPath();
+                ctx.moveTo(...camera.w2cXY(this.left, this.pos.y + y * this.gridTileSize.y));
+                ctx.lineTo(...camera.w2cXY(this.right, this.pos.y + y * this.gridTileSize.y));
+                ctx.stroke();
+            }
+
+            // Vertical lines
+            for (let x = 0; x <= this.grid.width; x++) {
+                ctx.beginPath();
+                ctx.moveTo(...camera.w2cXY(this.pos.x + x * this.gridTileSize.x, this.top));
+                ctx.lineTo(...camera.w2cXY(this.pos.x + x * this.gridTileSize.x, this.bottom));
+                ctx.stroke();
+            }
+        }
     }
 
     update() {

@@ -17,5 +17,5 @@ setKeybind("sub", "\\-");
 
 Resource.loadTexture("../res/small_tiles.png", "terrain");
 Resource.loadFile("./tilemap.json", "terrain_tilemap");
-Resource.loadFile("./export.json", "export");
+Resource.loadFile("./a.json", "export");
 Resource.startLoading();
