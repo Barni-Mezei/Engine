@@ -3,7 +3,7 @@
  */
 
 /**
- * TOOD:
+ * TODO:
  * layers [grid, grid2]
  * special layers: collision, navigation
  * 
@@ -36,7 +36,7 @@ class Tile {
     }
 }
 
-class TileMap extends Object2D {
+class SimpleTileMap extends Object2D {
     // Tile atlas
     atlasId = "";
     atlasTexture;
@@ -83,7 +83,7 @@ class TileMap extends Object2D {
         this.#setAtlasData(atlasData);
         this._updateTileMapSize();
         
-        this.tiles = TileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
+        this.tiles = SimpleTileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
 
         this._updateTileSizes();
 
@@ -167,7 +167,7 @@ class TileMap extends Object2D {
 
         for (let y = 0; y < atlasData.rows; y++) {
             for (let x = 0; x < atlasData.columns; x++) {
-                let tileId = TileMap._getTileIdFromCoords(x, y);
+                let tileId = SimpleTileMap._getTileIdFromCoords(x, y);
                 let tileTexture = Texture.canvasFromImage(image, {
                     width: atlasData.tileWidth,
                     height: atlasData.tileHeight,
@@ -185,7 +185,7 @@ class TileMap extends Object2D {
     static importTilemap(atlasTextureId, width, height, importData) {
         if (!("atlasData" in importData)) throw Error('Missing property "atlasData" in importData!');
 
-        let newTilemap = new TileMap(atlasTextureId, importData.atlasData, width, height);
+        let newTilemap = new SimpleTileMap(atlasTextureId, importData.atlasData, width, height);
 
         let tileChars = {};
 
@@ -245,7 +245,7 @@ class TileMap extends Object2D {
         let i = 0;
         for (let tileId in this.tiles) {
             let tile = this.tiles[tileId];
-            let defaultTileId = TileMap._getTileIdFromCoords(tile.atlasPos.x, tile.atlasPos.y);
+            let defaultTileId = SimpleTileMap._getTileIdFromCoords(tile.atlasPos.x, tile.atlasPos.y);
             if (tile.id == defaultTileId) continue;
 
             out.tiles[defaultTileId] = {

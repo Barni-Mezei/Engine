@@ -132,11 +132,6 @@ class Grid {
         return this.#data[y][x];
     }
 
-    /* TODO: When resizing a grid, the default values are NOT cloned, but rather set, so values may point to the same object,
-    meaning every new cell will be the same
-    Solved, with structuredClone, which will not clone everything...
-    */
-    
     /**
      * Resizes the grid, to the new specified size. New tiles will default to this.defaultValue, and cropped tiles, will disappear forever
      * @param {Number} newWidth The new width of the grid, in number of cells
@@ -148,10 +143,39 @@ class Grid {
         let originalSize = this.size.copy();
         this.size = new Vector(newWidth, newHeight);
 
+        // Add to height
+        if (newHeight > originalSize.y) {
+            for (let i = 0; i < newHeight - originalSize.y; i++) {
+                let extraRow = [];
+                for (let i = 0; i < newWidth; i++) {
+                    extraRow.push(structuredClone(defaultValue));
+                }
+
+                this.#data.push(extraRow);
+            }
+        }
+
+        // Remove from height
+        if (newHeight < originalSize.y) {
+            // Keep values, only in the new width boundary
+            let newData = [];
+            for (let i = 0; i < newHeight; i++) {newData[i] = this.#data[i]}
+
+            this.#data = newData;
+        }
+
         // Add to width
         if (newWidth > originalSize.x) {
             for (let y = 0; y < this.#data.length; y++) {
-                let extraValues = Array(newWidth - originalSize.x).fill(structuredClone(defaultValue));
+                //let extraValues = Array(newWidth - originalSize.x).fill(structuredClone(defaultValue));
+
+                let extraValues = [];
+                for (let i = 0; i < newWidth - originalSize.x; i++) {
+                    extraValues.push(structuredClone(defaultValue));
+                }
+
+
+
                 this.#data[y] = this.#data[y].concat(extraValues);
             }
         }
@@ -165,24 +189,6 @@ class Grid {
 
                 this.#data[y] = newRow;
             }
-        }
-
-
-        // Add to height
-        if (newHeight > originalSize.y) {
-            for (let i = 0; i < newHeight - originalSize.y; i++) {
-                let extraRow = Array(this.size.x).fill(structuredClone(defaultValue));
-                this.#data.push(extraRow);
-            }
-        }
-
-        // Remove from height
-        if (newHeight > originalSize.y) {
-            // Keep values, only in the new width boundary
-            let newData = [];
-            for (let i = 0; i < newHeight; i++) {newData[i] = this.#data[i]}
-
-            this.#data = newData;
         }
 
         return originalSize;

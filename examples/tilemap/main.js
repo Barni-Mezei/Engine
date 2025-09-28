@@ -3,7 +3,7 @@ let tilemap;
 
 async function init() {
     //tilemap = new TileMap("terrain");
-    tilemap = TileMap.importTilemap("terrain", 5, 5, await FileResource.getJson("terrain_tilemap"));
+    tilemap = SimpleTileMap.importTilemap("terrain", 10, 0, await FileResource.getJson("terrain_tilemap"));
     //tilemap.fill("water");
     tilemap.setTileAt(new Vector(), "path_v");
 }
