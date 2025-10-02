@@ -9,14 +9,15 @@ let currentTileIndex = 0;
 
 async function init() {
     tilemap = SimpleTileMap.importTilemap("terrain", 0, 0, await FileResource.getJson("terrain_tilemap"));
-    tilemap.grid.resize(18, 18);
-    tilemap.fill("path_v");
+    //tilemap.grid.resize(18, 18);
+    //tilemap.fill("grass_block");
     tilemap._updateTileMapSize();
 
     editorPos = tilemap.center;
 
     camera.settings.glideSpeed = 0.25;
     camera.settings.zoomSpeed = -1;
+    camera.settings.rounded = true;
 }
 
 function update() {
@@ -75,12 +76,21 @@ function update() {
     if (input.mouse.down) {
         tilemap.setTileAt(tilePos, currentTile);
     }
+
+    // Reset tiles
+    if (input.mouse.right) {
+        tilemap.setTileAt(tilePos, null);
+    }
 }
 
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
-    tilemap.render("#444", camera.w2csX(0.5));
+    if (settings.debug.grid) {
+        tilemap.render("#444", camera.w2csX(0.5));
+    } else {
+        tilemap.render();
+    }
 
     // Center
     /*ctx.fillStyle = "red";
@@ -94,6 +104,13 @@ function render() {
     ctx.beginPath();
     ctx.rect(...camera.w2cf(cursorPos, tilemap.gridTileSize));
     ctx.stroke()
+
+    // Current tile display
+
+    ctx.drawImage(
+        tilemap.getTileById(currentTile).texture,
+        c.width - 50, 0, 50, 50
+    );
 
     document.getElementById("text").innerText += `${tilePos.x}, ${tilePos.y}: ${tilemap.getTileAt(tilePos)}` + "\n";
     document.getElementById("text").innerText += `Current tile [${currentTileIndex}]: ${currentTile}` + "\n";

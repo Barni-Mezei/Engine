@@ -7,8 +7,8 @@
     <title>Tilemap test</title>
     <link rel="stylesheet" href="/src/engine.css">
     <style>
-        canvas {
-            background-color: black;
+        panel {
+            background-color: rebeccapurple;
         }
     </style>
 </style>
@@ -16,7 +16,14 @@
 
 <body oncontextmenu="return false">
     <canvas id="maincv" class="pixel-perfect"></canvas>
+
+    <div id="ui">
+        <ui-panel src="../res/rect01.png" margin="16">
+            <h1>Main title here</h1>
+        </ui-panel>
+    </div>
     
+
     <script defer src="/src/domManager.js"></script>
     <script defer src="/src/objects.js"></script>
     <script defer src="/src/resources.js"></script>

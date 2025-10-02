@@ -80,6 +80,22 @@ div#debug input:focus {
     filter: brightness(1.2);
 }
 
+
+/* Game UI container */
+
+div#ui {
+    position: fixed;
+
+    top: 0px;
+    left: 0px;
+
+    width: 100vw;
+    height: 100vh;
+
+    z-index: 999;
+}
+
+
 /* Notification container */
 #notContainer {
     position: fixed;

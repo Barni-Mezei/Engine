@@ -127,3 +127,59 @@ function addDebugOption(id, title, type, defaultValue, value) {
     
     settings.debug[id] = defaultValue;
 }
+
+/* Panel UI component */
+
+class Panel extends HTMLElement {
+    static observedAttributes = ["src", "margin"];
+
+    margin = 0;
+
+    image;
+
+    texture;
+
+    constructor() {
+        super();
+
+        this.image = new Image();
+        this.texture = new OffscreenCanvas(16, 16);
+    }
+
+    connectedCallback() {
+        // Add listeneer to resize
+        this.addEventListener("resize", function (e) {
+            // Resize image into the texture
+        });
+    }
+
+    disconnectedCallback() {
+        console.log("Custom element removed from page.");
+    }
+
+    connectedMoveCallback() {
+        console.log("Custom element moved with moveBefore()");
+    }
+
+    adoptedCallback() {
+        console.log("Custom element moved to new page.");
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name == "src") {
+            this.image.src = newValue;
+        }
+
+        if (name == "margin") {
+            this.margin = parseInt(newValue);
+        }
+    }
+}
+
+customElements.define("ui-panel", Panel);
+
+/*let _panels = document.querySelectorAll("ninepatch")
+
+for (let i = 0 ; i < _panels.length; i++) {
+
+}*/

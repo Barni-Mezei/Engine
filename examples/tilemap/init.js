@@ -15,7 +15,8 @@ setKeybind("d", "d");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
+addDebugOption("grid", "Show grid", "bool", false);
+
 Resource.loadTexture("../res/small_tiles.png", "terrain");
-Resource.loadFile("./tilemap.json", "terrain_tilemap");
-Resource.loadFile("./a.json", "export");
+Resource.loadFile("./test.json", "terrain_tilemap");
 Resource.startLoading();

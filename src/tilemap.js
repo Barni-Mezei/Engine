@@ -447,6 +447,8 @@ class SimpleTileMap extends Object2D {
         let self = this;
 
         this.grid.forEach(function (x, y, tile) {
+            if (tile.id == null) return;
+
             let tilePos = self.pos.add(new Vector(x, y).mult(self.gridTileSize));
 
             /*ctx.drawImage(
