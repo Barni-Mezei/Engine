@@ -72,8 +72,6 @@ let input = {
 }
 
 window.onkeydown = function (e) {
-    e.preventDefault();
-
     if (!input.keys.pressed.includes(e.key)) {
         input.keys.pressed.unshift(e.key);
     }
@@ -82,7 +80,7 @@ window.onkeydown = function (e) {
 }
 
 window.onkeyup = function (e) {
-    e.preventDefault();
+    //e.preventDefault();
     
     input.keys.pressed = input.keys.pressed.filter( a => a != e.key && a != e.key.toLowerCase() && a != e.key.toUpperCase());
 }
