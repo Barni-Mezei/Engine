@@ -486,6 +486,9 @@ class Texture extends BaseResource {
         let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
         let offCtx = offCanvas.getContext("2d");
 
+        offCtx.imageSmoothingEnabled = false;
+        offCtx.imageSmoothingQuality = "low";
+
         offCtx.drawImage(
             image,
             imageOffsetX, imageOffsetY, imageWidth, imageHeight,

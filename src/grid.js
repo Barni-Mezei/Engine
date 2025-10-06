@@ -63,8 +63,8 @@ class Grid {
 
         // Hashing function
         this.hashFunction = hashFunction;
-        this.hashFunction ??= function (tile) {
-            return tile;
+        this.hashFunction ??= function (cell) {
+            return cell;
         }
     }
 
@@ -122,7 +122,7 @@ class Grid {
      * Returns the value in the cell, at the specified coordinates, or the grid's default value
      * @param {Number} x The X coordinate of the grid cell
      * @param {Number} y the Y coordinate of the grid cell
-     * @param {Any} defaultValue The value to return with, if the tile does not exists
+     * @param {Any} defaultValue The value to return with, if the cell does not exists
      * (Applies only to this function, does not set this.defaultValue, but does overwrite it)
      * @returns {Any} The value of the cell at the specified position, or the default value
      */
@@ -133,10 +133,20 @@ class Grid {
     }
 
     /**
-     * Resizes the grid, to the new specified size. New tiles will default to this.defaultValue, and cropped tiles, will disappear forever
+     * Returns a cell position, from a cell index
+     * @param {Number} index The index of a cell, if the grid is a one dimansional array
+     * @param {Number} gridWidth The width of the grid (in cells)
+     * @returns {Vector} Returns a vector, representing a call position
+     */
+    static indexToCoordinate(index, gridWidth) {
+        return new Vector(index % gridWidth, Math.floor(index / gridWidth));
+    }
+
+    /**
+     * Resizes the grid, to the new specified size. New cells will default to this.defaultValue, and cropped cells, will disappear forever
      * @param {Number} newWidth The new width of the grid, in number of cells
      * @param {Number} newHeight The new height of the grid, in number of cells
-     * @param {Any} defaultValue The value to set empty tiles to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
+     * @param {Any} defaultValue The value to set empty cells to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
      * @returns {Vector} The original size of the grid, in number of cells
      */
     resize(newWidth, newHeight, defaultValue = this.defaultValue) {
@@ -244,7 +254,7 @@ class Grid {
     /**
      * Assigns an index to every  cells in the grid, based on the island they are connected to
      * @param {Function} hashFunction A function, that is called on every cell, and is used to compare them. (Should return a number or a string)
-     * @param {Any} defaultValue The value to set empty tiles to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
+     * @param {Any} defaultValue The value to set empty cells to (Applies only to this function, does not set this.defaultValue, but does overwrite it)
      * @returns {Grid} A new grid, where each cell, holds an island's ID or, defaultValue
      */
     findIslands(defaultValue = this.defaultValue, hashFunction = this.hashFunction) {
@@ -407,7 +417,7 @@ class Grid {
 
 
     /**TODO: Used area, or island bounding rect, determined by function??
-     * Returns the dimensions of the bounding rect of all used cells in the grid (specify tile considered as AIR)
+     * Returns the dimensions of the bounding rect of all used cells in the grid (specifyed cell considered as empty)
      * @param {Array} grid A grid of cells
      * @param {Number} gridWidth The width of the grid (in cells)
      * @param {Number} gridHeight The height of the grid (in cells)

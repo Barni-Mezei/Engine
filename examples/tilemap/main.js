@@ -8,16 +8,20 @@ let currentTile = "";
 let currentTileIndex = 0;
 
 async function init() {
-    tilemap = SimpleTileMap.importTilemap("terrain", 0, 0, await FileResource.getJson("terrain_tilemap"));
-    //tilemap.grid.resize(18, 18);
-    //tilemap.fill("grass_block");
-    tilemap._updateTileMapSize();
+    tilemap = TileMap.importFromTiled("terrain", await FileResource.getJson("tiled_tilemap"));
+    //tilemap = SimpleTileMap.importTilemap("terrain", 0, 0, await FileResource.getJson("terrain_test"));
+    //tilemap.grid.resize(10, 10);
+    //tilemap._updateTileMapSize();
 
     editorPos = tilemap.center;
 
-    camera.settings.glideSpeed = 0.25;
+    //camera.settings.glideSpeed = 0.25;
     camera.settings.zoomSpeed = -1;
-    camera.settings.rounded = true;
+    //camera.settings.rounded = true;
+
+    let tileData = await FileResource.getJson("tiled_tilemap");
+
+    //console.dir("Tile data:", tileData);
 }
 
 function update() {
@@ -41,11 +45,11 @@ function update() {
     }
 
     if (isKeyPressed("add")) {
-        camera.zoom += 0.1 * camera.realZoom;
+        camera.zoom += 0.01 * camera.realZoom;
     }
 
     if (isKeyPressed("sub")) {
-        camera.zoom -= 0.1 * camera.realZoom;
+        camera.zoom -= 0.01 * camera.realZoom;
     }
 
     camera.clampValues();

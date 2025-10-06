@@ -143,13 +143,25 @@ class Panel extends HTMLElement {
         super();
 
         this.image = new Image();
-        this.texture = new OffscreenCanvas(16, 16);
+        this.canvas = new OffscreenCanvas(16, 16);
     }
 
     connectedCallback() {
         // Add listeneer to resize
-        this.addEventListener("resize", function (e) {
+        let self = this;
+
+        window.addEventListener("resize", function (e) {
             // Resize image into the texture
+            if (!self.image.complete) return;
+
+            let offCtx = self.canvas.getContext("2d");
+
+            self.canvas.width = self.offsetWidth;
+            self.canvas.height = self.offsetHeight;
+            offCtx.drawImage(self.image, 0, 0, self.canvas.width, self.canvas.height);
+            //self.style.background = self.canvas.toDataURL("image/png");
+            self.style.backgroundImage = self.image;
+            console.log(self);
         });
     }
 

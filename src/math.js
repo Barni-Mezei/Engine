@@ -67,8 +67,8 @@ function clamp(value, min, max) {
 /**
  * Rounds the input number to the given decimal places (default 2, like 0.12)
  * @param {Number} value The number to be rounded
- * @param {Number} precision The precision in decimal places
- * @returns {Number} The input number rounded to given decimal places
+ * @param {Number} precision The precision, as in number of decimal places
+ * @returns {Number} The input number rounded to the given decimal places
  */
 function round(value, precision = 2) {
     return Math.round(value * Math.pow(10, precision)) / Math.pow(10, precision);
