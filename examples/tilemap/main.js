@@ -1,4 +1,4 @@
-/* MAIN */
+/** @type {TileMap} */
 let tilemap;
 
 let editorPos = new Vector();
@@ -7,21 +7,21 @@ let tilePos = new Vector();
 let currentTile = "";
 let currentTileIndex = 0;
 
+let isDragging = false;
+
 async function init() {
     tilemap = TileMap.importFromTiled("terrain", await FileResource.getJson("tiled_tilemap"));
-    //tilemap = SimpleTileMap.importTilemap("terrain", 0, 0, await FileResource.getJson("terrain_test"));
-    //tilemap.grid.resize(10, 10);
-    //tilemap._updateTileMapSize();
+
+    /*tilemap = new TileMap("terrain", {tileWidth: 16, tileHeight: 16}, 10, 10);
+
+    tilemap.clear("graphics_0", "tile_0_0");
+    let newLayerId = tilemap.addLayer("graphics");
+
+    console.log(newLayerId);*/
 
     editorPos = tilemap.center;
 
-    //camera.settings.glideSpeed = 0.25;
-    camera.settings.zoomSpeed = -1;
-    //camera.settings.rounded = true;
-
-    let tileData = await FileResource.getJson("tiled_tilemap");
-
-    //console.dir("Tile data:", tileData);
+    camera.settings.rounded = true;
 }
 
 function update() {
@@ -44,24 +44,32 @@ function update() {
         editorPos.x += movementSpeed;
     }
 
-    if (isKeyPressed("add")) {
-        camera.zoom += 0.01 * camera.realZoom;
+    if (input.mouse.middle) {
+        editorPos = editorPos.add( new Vector(input.mouse.prevX - input.mouse.x, input.mouse.prevY - input.mouse.y).mult(1 / camera.realZoom) );
     }
 
-    if (isKeyPressed("sub")) {
-        camera.zoom -= 0.01 * camera.realZoom;
+    if (isKeyPressed("add") || input.mouse.wheelUp) {
+        camera.zoom += 0.1 * camera.realZoom;
+        camera.clampValues();
+        if (camera.zoom < camera.settings.maxZoom) editorPos = camera.c2w(Vector.fromObject(input.mouse).sub(c.center).mult(0.09).add(c.center));
+    }
+
+    if (isKeyPressed("sub") || input.mouse.wheelDown) {
+        camera.zoom -= 0.1 * camera.realZoom;
+        camera.clampValues();
+        if (camera.zoom > camera.settings.minZoom) editorPos = camera.c2w(Vector.fromObject(input.mouse).sub(c.center).mult(-0.11).add(c.center));
     }
 
     camera.clampValues();
-    camera.lookAt(editorPos);
+    camera.lookAt(editorPos, true);
     camera.update();
 
     // Editor controls
 
     // Cursor and tile position
-    cursorPos = camera.c2w(Vector.fromObject(input.mouse)).sub(tilemap.gridTileSize.mult(0.5));
-    tilePos = cursorPos.mult(1 / tilemap.gridTileSize.x).round()
-    cursorPos = tilePos.mult(tilemap.gridTileSize.x);
+    cursorPos = camera.c2w(Vector.fromObject(input.mouse)).sub(tilemap.tileSize.mult(0.5));
+    tilePos = cursorPos.mult(1 / tilemap.tileWidth).round()
+    cursorPos = tilePos.mult(tilemap.tileWidth);
 
     if (isKeyJustPressed("q")) {
         currentTileIndex -= 1;
@@ -78,12 +86,12 @@ function update() {
 
     // Set tiles
     if (input.mouse.down) {
-        tilemap.setTileAt(tilePos, currentTile);
+        tilemap.setTileAt(0, tilePos, currentTile);
     }
 
     // Reset tiles
     if (input.mouse.right) {
-        tilemap.setTileAt(tilePos, null);
+        tilemap.setTileAt(0, tilePos, null);
     }
 }
 
@@ -106,16 +114,19 @@ function render() {
     ctx.strokeStyle = "#00ddff";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.rect(...camera.w2cf(cursorPos, tilemap.gridTileSize));
+    ctx.rect(...camera.w2cf(cursorPos, tilemap.tileSize));
     ctx.stroke()
 
     // Current tile display
+    ctx.beginPath();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(c.width - 52, 0, 52, 52);
 
     ctx.drawImage(
         tilemap.getTileById(currentTile).texture,
         c.width - 50, 0, 50, 50
     );
 
-    document.getElementById("text").innerText += `${tilePos.x}, ${tilePos.y}: ${tilemap.getTileAt(tilePos)}` + "\n";
+    document.getElementById("text").innerText += `${tilePos.x}, ${tilePos.y}: ${tilemap.getTileAt(0, tilePos)}` + "\n";
     document.getElementById("text").innerText += `Current tile [${currentTileIndex}]: ${currentTile}` + "\n";
 }

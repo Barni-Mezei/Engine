@@ -42,13 +42,6 @@ let settings = {
     maxNotificationCount: 5,
     enableAudio: true,
 
-    camera: {
-        minZoom: 0.25,
-        maxZoom: 4,
-        zoomSpeed: 1, // Multiplier, for how fast the camera reaches it's target zoom level
-        slideSpeed: 0.5, // Multiplier, for how fast the camera reaches it's target position
-    },
-
     debug: {
         fpsUpdateInterval: 1000, // Milliseconds between fps updates, larger intervals are more precise
     },
@@ -93,7 +86,6 @@ function _mainLoop() {
     /*document.getElementById("text").textContent += "Pressed: " + input.keys.pressed + "\n";
     document.getElementById("text").textContent += "J. pre.: " + input.keys.justPressed + "\n";*/
 
-    
     updateInputs();
 
     time.measureDelta = time.elapsed;

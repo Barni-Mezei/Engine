@@ -1,8 +1,5 @@
 /**
  * Dependencies: camera
- * 
- * Variables:
- * let input = {mouse : {}, keys : {}}
  */
 
 
@@ -35,6 +32,10 @@ let input = {
 
         prevX: 0,
         prevY: 0,
+
+        wheel: 0,
+        wheelUp: false,
+        wheelDown: false,
 
         motionX: 0,
         motionY: 0,
@@ -108,7 +109,10 @@ window.onmousemove = function (e) {
 window.onwheel = function (e) {
     _updateMousePosition(e);
 
-    camera.targetZoom = clamp(camera.targetZoom - Math.sign(e.deltaY)*0.05, settings.camera.minZoom, settings.camera.maxZoom);
+    input.mouse.wheel = e.deltaY;
+
+    if (e.deltaY < 0) input.mouse.wheelUp = true;
+    if (e.deltaY > 0) input.mouse.wheelDown = true;
 }
 
 window.onblur = _inputLost;
@@ -145,6 +149,9 @@ function updateInputs() {
     input.mouse.oldDown = input.mouse.down;
     input.mouse.oldRight = input.mouse.right;
     input.mouse.oldMiddle = input.mouse.middle;
+    input.mouse.wheel = 0;
+    input.mouse.wheelUp = false;
+    input.mouse.wheelDown = false;
 }
 
 function _testKeyId(filterString, array) {

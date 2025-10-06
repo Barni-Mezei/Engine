@@ -382,7 +382,7 @@ class Camera {
      * @param {Vector} v The vector to be trasformed
      */
     camToWorld(v) {
-        return v.add(this.#realPos).mult(1 / this.#realZoom);
+        return v.add(this.#realPos.mult(this.#realZoom)).mult(1 / this.#realZoom);
     }
 
     // Aliases

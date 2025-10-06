@@ -2,17 +2,6 @@
  * Dependencies: vector
  */
 
-
-
-
-
-
-
-
-
-
-
-
 class Grid {
     // Default cell value
     defaultValue = null;
@@ -66,6 +55,47 @@ class Grid {
         this.hashFunction ??= function (cell) {
             return cell;
         }
+    }
+
+    /**
+     * Creates a new Grid instance, using the values as cell vlaues, from the specified array. There a re 2 modes of aoperation:
+     * - array is a one dimansional array [0, 1, 2]: In this case the width must be specified
+     * - array is a two dimansional array [[0, 1], [2, 3], [4, 5]]: In this case the width can be omitted entirely.
+     * @param {Array} array The data to create the new Grid from (if it's a 1D array, all incomplete rows will be completed, with null)
+     * @param {Number} width The width of the grid
+     */
+    static fromArray(array, width) {
+        if (array.length == 0) return;
+
+        let newGrid;
+        let firstItem = array[0];
+
+        if (firstItem instanceof Array) {
+            // 2D mode
+            newGrid = new Grid(firstItem.length, array.length);
+
+            // Copy data
+            newGrid.map(function(x, y, cell) {
+                return array[y][x];
+            });
+        } else {
+            // 1D mode
+            newGrid = new Grid(width, Math.ceil(array.length / width));
+
+            let lengthDiff = Math.ceil(array.length / width) * width - array.length;
+
+            // Fill up the array to be the correct length
+            if (lengthDiff > 0) {
+                array = array.concat( Array(lengthDiff).fill(null) );
+            }
+
+            // Copy data
+            newGrid.map(function(x, y, cell) {
+                return array[Grid.coordinateToIndex(x, y, newGrid.width)];
+            });
+        }
+
+        return newGrid;
     }
 
     /**
@@ -136,10 +166,21 @@ class Grid {
      * Returns a cell position, from a cell index
      * @param {Number} index The index of a cell, if the grid is a one dimansional array
      * @param {Number} gridWidth The width of the grid (in cells)
-     * @returns {Vector} Returns a vector, representing a call position
+     * @returns {Vector} Returns a vector, representing a cell position
      */
     static indexToCoordinate(index, gridWidth) {
         return new Vector(index % gridWidth, Math.floor(index / gridWidth));
+    }
+
+    /**
+     * Returns a cell position, from a cell index
+     * @param {Number} x The X coordinate of a cell
+     * @param {Number} y The X coordinate of a cell
+     * @param {Number} gridWidth The width of the grid (in cells)
+     * @returns {Number} Returns a number, representing an index in a one dimensional array
+     */
+    static coordinateToIndex(x, y, gridWidth) {
+        return y * gridWidth + x;
     }
 
     /**
@@ -231,7 +272,10 @@ class Grid {
 
     /**
      * Works very similar to the built in `Array.prototype.map` function. The return value of the callback will be set, as the new cell value
-     * @param {Function} callback The function which will get called on every cell
+     * @param {Function} callback The function which will get called on every cell. Passed in parameters:
+     * - x: The X position of the current cell
+     * - y: The Y position of the current cell
+     * - cell: The data in the current cell
      */
     map(callback) {
         for (let y = 0; y < this.height; y++) {
