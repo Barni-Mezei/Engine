@@ -778,26 +778,62 @@ class TileMap extends Object2D {
 
         // Re-add the layers from the save file
         for (let layer of importData.layers) {
-            console.log(layer);
-
             if (layer.type == "tilelayer") {
                 let newLayer = newTilemap.addLayer("graphics");
 
                 let dataGrid = Grid.fromArray(layer.data, layer.width);
-                newTilemap.setGrid(newLayer, dataGrid);
 
-                dataGrid.forEach(function (x, y, tileId) {
-                    let tilePos = Grid.indexToCoordinate(tileId, newTilemap.atlasData.columns);
-                    newTilemap.setTileAt(newLayer, new Vector(x, y), SimpleTileMap._getTileIdFromCoords(tilePos.x, tilePos.y));
+                dataGrid.map(function (x, y, tileId) {
+                    let tilePos = Grid.indexToCoordinate(tileId - 1, newTilemap.atlasData.columns);
+                    let correctTileId = SimpleTileMap._getTileIdFromCoords(tilePos.x, tilePos.y);
+                    return {
+                        id: tileId == 0 ? null : correctTileId,
+                        meta: {},
+                    }
                 });
 
-                /*dataGrid.map(function (x, y, tileId) {
-                    let tilePos = Grid.indexToCoordinate(tileId, newTilemap.atlasData.columns);
-                    return SimpleTileMap._getTileIdFromCoords(tilePos.x, tilePos.y);
-                });*/
-
-                //newTilemap.setGrid(newLayer, dataGrid);
+                newTilemap.setGrid(newLayer, dataGrid);
             }
+
+            if (layer.type == "objectgroup") {
+                console.log(layer);
+                let newLayer = newTilemap.addLayer("navigation");
+
+                for (let object of layer.objects) {
+                    if ("point" in object) {
+                        console.log("Point at: ", object.x, object.y, object.width, object.height);
+                        newTilemap.addObject(
+                            newLayer,
+                            new Point(
+                                ((object.x / importData.tilewidth) + (layer.offsetx / importData.tilewidth)) * newTilemap.tileWidth + newTilemap.pos.x,
+                                ((object.y / importData.tileheight) + (layer.offsety / importData.tileheight)) * newTilemap.tileHeight + newTilemap.pos.y,
+                            )
+                        );
+                    } else if ("polygon" in object) {
+                        console.log("Path at: ", object.x, object.y, object.width, object.height);
+
+                    } else {
+                        console.log("Rectangle at: ", object.x, object.y, object.width, object.height);
+                    }
+                }
+
+
+                /*let newLayer = newTilemap.addLayer("graphics");
+
+                let dataGrid = Grid.fromArray(layer.data, layer.width);
+
+                dataGrid.map(function (x, y, tileId) {
+                    let tilePos = Grid.indexToCoordinate(tileId - 1, newTilemap.atlasData.columns);
+                    let correctTileId = SimpleTileMap._getTileIdFromCoords(tilePos.x, tilePos.y);
+                    return {
+                        id: tileId == 0 ? null : correctTileId,
+                        meta: {},
+                    }
+                });
+
+                newTilemap.setGrid(newLayer, dataGrid);*/
+            }
+
         }
 
         return newTilemap;
@@ -937,6 +973,15 @@ class TileMap extends Object2D {
         return this.#layers[ Object.keys(this.#layers)[0] ];
     }
 
+    /** Replaces an existing layer's grid, with the specified one
+     * @param {Grid} grid The grid, to replace to
+     */
+    setGrid(layerId, grid) {
+        if (!(layerId in this.#layers)) return;
+
+        this.#layers[layerId].grid = grid;
+    }
+
     /** Returns with the specified layer's grid object, or null if the layer is invalid
      * @param {String} layerId The ID of a layer (example: "graphics_0")
      * @returns {Object|null}
@@ -945,13 +990,23 @@ class TileMap extends Object2D {
         return this.#layers[layerId]?.grid ?? null;
     }
 
-    /** Replaces an existing layer's grid, with the specified one
-     * @param {Grid} grid The grid, to replace to
+    /** Appends an object to an existing layer's objects array
+     * @param {String} layerId The ID of a layer (example: "graphics_0")
+     * @param {Object} object The object, to add to the layer
      */
-    setGrid(layerId, grid) {
+    addObject(layerId, object) {
         if (!(layerId in this.#layers)) return;
 
-        this.#layers[layerId].grid = grid;
+        this.#layers[layerId].objects.push(object);
+    }
+
+    /** Retrieves all objects stored in a layer
+     * @param {String} layerId The ID of a layer (example: "graphics_0")
+     */
+    getObjects(layerId) {
+        if (!(layerId in this.#layers)) return;
+
+        return this.#layers[layerId].objects;
     }
 
     // Tiles array
@@ -1070,8 +1125,9 @@ class TileMap extends Object2D {
         let self = this;
 
         //console.log(this.getLayers());
-        for (let layer of this.getLayers("graphics")) {
-            this.getGrid(layer).forEach(function (x, y, tile) {
+        for (let layerId of this.getLayers("graphics")) {
+            // Render tiles
+            this.getGrid(layerId).forEach(function (x, y, tile) {
                 if (tile.id == null) return;
 
                 let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
@@ -1089,28 +1145,48 @@ class TileMap extends Object2D {
                 //ctx.fillStyle = self.getTileById(tile.id).pattern;
                 //ctx.fillRect(...camera.w2c(tilePos).round().toArray(), ...camera.w2cs(self.tileSize).round().toArray());
             });
+        }
 
-            if (gridColor != null) {
-                ctx.strokeStyle = gridColor;
-                ctx.lineWidth = camera.w2csX(gridThickness);
-                ctx.lineJoin = "butt";
-                ctx.lineCap = "butt";
+        for (let layerId of this.getLayers("navigation")) {
+            // Render tiles
+            this.getGrid(layerId).forEach(function (x, y, tile) {
+                if (tile == null) return;
 
-                // Horizontal lines
-                for (let y = 0; y <= this.#height; y++) {
-                    ctx.beginPath();
-                    ctx.moveTo(...camera.w2cXY(this.left, this.pos.y + y * this.tileHeight));
-                    ctx.lineTo(...camera.w2cXY(this.right, this.pos.y + y * this.tileHeight));
-                    ctx.stroke();
-                }
+                let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
 
-                // Vertical lines
-                for (let x = 0; x <= this.#width; x++) {
-                    ctx.beginPath();
-                    ctx.moveTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.top));
-                    ctx.lineTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.bottom));
-                    ctx.stroke();
-                }
+                let color = new Color("#ff0000");
+                color.brightness = tile;
+
+                ctx.fillStyle = color.hexString;
+                ctx.fillRect(...camera.w2cf(tilePos, self.tileSize));
+            });
+
+            // Render objects
+            this.#layers[layerId].objects.forEach(function (object, index) {
+                object.render();
+            });
+        }
+
+        if (gridColor != null) {
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = camera.w2csX(gridThickness);
+            ctx.lineJoin = "butt";
+            ctx.lineCap = "butt";
+
+            // Horizontal lines
+            for (let y = 0; y <= this.#height; y++) {
+                ctx.beginPath();
+                ctx.moveTo(...camera.w2cXY(this.left, this.pos.y + y * this.tileHeight));
+                ctx.lineTo(...camera.w2cXY(this.right, this.pos.y + y * this.tileHeight));
+                ctx.stroke();
+            }
+
+            // Vertical lines
+            for (let x = 0; x <= this.#width; x++) {
+                ctx.beginPath();
+                ctx.moveTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.top));
+                ctx.lineTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.bottom));
+                ctx.stroke();
             }
         }
     }

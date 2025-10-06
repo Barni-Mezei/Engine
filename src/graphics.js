@@ -79,3 +79,21 @@ class Label2D extends Object2D {
         }
     }
 }
+
+class Point extends Object2D {
+    color = "#00dddff";
+
+    constructor(x, y, color = "#00ddff") {
+        super(new Vector(x, y), new Vector(1));
+
+        this.color = color;
+    }
+
+    render(pos) {
+        ctx.fillStyle = this.color;
+
+        ctx.beginPath();
+        ctx.arc(...camera.w2c(this.pos).toArray(), 10, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
