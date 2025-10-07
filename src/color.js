@@ -100,16 +100,30 @@ class Color {
         return "#" + this.#numToHex(this.r) + this.#numToHex(this.g) + this.#numToHex(this.b) + this.#numToHex(this.a);
     }
 
-    constructor(color = "#000000ff") {
-        let offCanvas = new OffscreenCanvas(1, 1);
-        let offCtx = offCanvas.getContext("2d");
+    /**
+     * Creates a new color manipulator object
+     * @param {String|Number} color The color in a string format, or theRred channel's value
+     * @param {Number|null} g The value of the Green channel
+     * @param {Number|null} b The value of the Blue channel
+     * @param {Number|null} a The value of the Alpha channel
+     */
+    constructor(color = "#000000ff", g = null, b = null, a = null) {
+        if (g) {
+            // Set color directly
+            this.#baseColor = [color, g, b, a];
+        } else {
+            // Convert the color to rgba format (slower)
+            let offCanvas = new OffscreenCanvas(1, 1);
+            let offCtx = offCanvas.getContext("2d");
+    
+            offCtx.fillStyle = color;
+            offCtx.fillRect(0,0, 1,1);
+            let pixelData = offCtx.getImageData(0,0, 1,1).data;
+    
+            this.#baseColor = [pixelData[0] / 255, pixelData[1] / 255, pixelData[2] / 255, pixelData[3] / 255];
+            this.#syncColors();
+        }
 
-        offCtx.fillStyle = color;
-        offCtx.fillRect(0,0, 1,1);
-        let pixelData = offCtx.getImageData(0,0, 1,1).data;
-
-        this.#baseColor = [pixelData[0] / 255, pixelData[1] / 255, pixelData[2] / 255, pixelData[3] / 255];
-        this.#syncColors();
     }
 
     #syncColors() {
@@ -126,6 +140,22 @@ class Color {
         this.#baseColor[3] = 1;
 
         this.#syncColors();
+    }
+
+    static addBrightness(color, brightness) {
+        let offCanvas = new OffscreenCanvas(1, 1);
+        let offCtx = offCanvas.getContext("2d");
+
+        offCtx.fillStyle = color;
+        offCtx.fillRect(0,0, 1,1);
+        let pixelData = offCtx.getImageData(0,0, 1,1).data;
+
+        return [
+            pixelData[0] * brightness,
+            pixelData[1] * brightness,
+            pixelData[2] * brightness,
+            pixelData[3] * brightness
+        ]
     }
 
     /**

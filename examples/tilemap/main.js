@@ -4,10 +4,14 @@ let tilemap;
 let editorPos = new Vector();
 let cursorPos = new Vector();
 let tilePos = new Vector();
+
 let currentTile = "";
 let currentTileIndex = 0;
 
-let isDragging = false;
+let navStrength = 0;
+
+let allLayers = ["graphics_0", "graphics_1", "navigation_0"];
+let currentLayerIndex = 0;
 
 async function init() {
     tilemap = TileMap.importFromTiled("terrain", await FileResource.getJson("tiled_tilemap"));
@@ -19,9 +23,29 @@ async function init() {
 
     console.log(newLayerId);*/
 
+    // Add navigation
+    tilemap.clear("navigation_0", 1);
+    tilemap.setGrid("navigation_0", Grid.fromArray([
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]))
+
+    tilemap.clear("graphics_0", "tile_0_0");
+    tilemap.clear("graphics_1", null);
+    tilemap.clear("navigation_0", 0);
+
+
     editorPos = tilemap.center;
 
-    camera.settings.rounded = true;
+    //camera.settings.rounded = true;
 }
 
 function update() {
@@ -84,14 +108,43 @@ function update() {
 
     currentTile = tilemap.tiles[ Object.keys(tilemap.tiles)[currentTileIndex] ].id;
 
+    if (isKeyJustPressed("r")) {
+        currentLayerIndex += 1;
+    }
+
+    if (isKeyJustPressed("f")) {
+        currentLayerIndex -= 1;
+    }
+
+    if (currentLayerIndex < 0) currentLayerIndex = allLayers.length - 1;
+    if (currentLayerIndex > allLayers.length - 1) currentLayerIndex = 0;
+
+    if (isKeyJustPressed("up")) {
+        navStrength += 0.1;
+    }
+
+    if (isKeyJustPressed("down")) {
+        navStrength -= 0.1;
+    }
+
+    navStrength = clamp(navStrength, 0, 1);
+
     // Set tiles
     if (input.mouse.down) {
-        tilemap.setTileAt(0, tilePos, currentTile);
+        if (currentLayerIndex < 2) {
+            tilemap.setTileAt(currentLayerIndex, tilePos, currentTile);
+        } else {
+            tilemap.setTileNavigation(0, tilePos, navStrength);
+        }
     }
 
     // Reset tiles
     if (input.mouse.right) {
-        tilemap.setTileAt(0, tilePos, null);
+        if (currentLayerIndex < 2) {
+            tilemap.setTileAt(currentLayerIndex, tilePos, null);
+        } else {
+            tilemap.setTileNavigation(0, tilePos, 1);
+        }
     }
 }
 
@@ -120,13 +173,19 @@ function render() {
     // Current tile display
     ctx.beginPath();
     ctx.fillStyle = "#000";
-    ctx.fillRect(c.width - 52, 0, 52, 52);
+    ctx.fillRect(c.width - 52, 0, 52, 52*2);
 
     ctx.drawImage(
         tilemap.getTileById(currentTile).texture,
         c.width - 50, 0, 50, 50
     );
 
+    ctx.fillStyle = `rgba(255, 0, 0, ${navStrength})`;
+    ctx.fillRect(
+        c.width - 50, 53, 50, 50
+    );
+
     document.getElementById("text").innerText += `${tilePos.x}, ${tilePos.y}: ${tilemap.getTileAt(0, tilePos)}` + "\n";
+    document.getElementById("text").innerText += `Current layer [${currentLayerIndex}]: ${allLayers[currentLayerIndex]}` + "\n";
     document.getElementById("text").innerText += `Current tile [${currentTileIndex}]: ${currentTile}` + "\n";
 }

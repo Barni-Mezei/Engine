@@ -130,6 +130,10 @@ function _mainLoop() {
     }
 
     requestAnimationFrame(_mainLoop);
+
+    function UpdateCountes() {}
+
+    return false;
 }
 
 // Start script when the body is loaded

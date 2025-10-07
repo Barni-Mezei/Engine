@@ -796,7 +796,6 @@ class TileMap extends Object2D {
             }
 
             if (layer.type == "objectgroup") {
-                console.log(layer);
                 let newLayer = newTilemap.addLayer("navigation");
 
                 for (let object of layer.objects) {
@@ -1105,7 +1104,17 @@ class TileMap extends Object2D {
     isColliding(layerIds /* array of layer ids */,point  /* world pos coordinate vec2 */) {}
 
     // Navigation
-    setTileNavigation(navLayer, tilePos, travelCost /* high makes a wall */) {}
+    setTileNavigation(navLayer, tilePos, travelCost /* high makes a wall */) {
+        if (typeof travelCost != "number") return 1;
+
+        let grid = this.getGrid("navigation_"+navLayer);
+
+        if (!grid) return 2;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return 3;
+    
+        grid.setCell(tilePos.x, tilePos.y, travelCost);
+    }
+
     getTileNavigation(navLayer, tilePos) {}
 
     /* {tiles: [Vector(0,0) ...], path: [Vector() ...]} returns array of tile pos + a world coord point list for path creation */
@@ -1132,39 +1141,53 @@ class TileMap extends Object2D {
 
                 let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
 
-                /*ctx.drawImage(
-                    self.getTileById(tile.id).texture,
-                    ...camera.w2c(tilePos).round().toArray(), ...camera.w2cs(self.tileSize).round().toArray()
-                );*/
-
                 ctx.drawImage(
                     self.getTileById(tile.id).texture,
-                    ...camera.w2c(tilePos).toArray(), ...camera.w2cs(self.tileSize).round().toArray()
+                    ...camera.w2c(tilePos).toArray(), ...camera.w2cs(self.tileSize).toArray()
                 );
-
-                //ctx.fillStyle = self.getTileById(tile.id).pattern;
-                //ctx.fillRect(...camera.w2c(tilePos).round().toArray(), ...camera.w2cs(self.tileSize).round().toArray());
             });
         }
 
-        for (let layerId of this.getLayers("navigation")) {
-            // Render tiles
-            this.getGrid(layerId).forEach(function (x, y, tile) {
-                if (tile == null) return;
+        if (settings.debug.collision) {
+            for (let layerId of this.getLayers("collision")) {
+                // Render tiles
+                this.getGrid(layerId).forEach(function (x, y, tile) {
+                    if (tile == null) return;
+    
+                    let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+    
+                    ctx.fillStyle = `rgba(0, 100, 255, ${tile / 2})`;
+                    
+                    ctx.fillRect(...camera.w2cf(tilePos, self.tileSize));
+                });
+    
+                // Render objects
+                this.#layers[layerId].objects.forEach(function (object, index) {
+                    object.render();
+                });
+            }
+        }
 
-                let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+        if (settings.debug.navigation) {
+            for (let layerId of this.getLayers("navigation")) {
+                // Render tiles
+                this.getGrid(layerId).forEach(function (x, y, tile) {
+                    if (tile == null) return;
+    
+                    let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+    
+                    ctx.fillStyle = `rgba(255, 0, 0, ${tile / 2})`;
+                    
+                    //new Color();
 
-                let color = new Color("#ff0000");
-                color.brightness = tile;
-
-                ctx.fillStyle = color.hexString;
-                ctx.fillRect(...camera.w2cf(tilePos, self.tileSize));
-            });
-
-            // Render objects
-            this.#layers[layerId].objects.forEach(function (object, index) {
-                object.render();
-            });
+                    ctx.fillRect(...camera.w2cf(tilePos.add(new Vector(0.5)), self.tileSize.sub(new Vector(1))));
+                });
+    
+                // Render objects
+                this.#layers[layerId].objects.forEach(function (object, index) {
+                    object.render();
+                });
+            }
         }
 
         if (gridColor != null) {
