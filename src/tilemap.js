@@ -3,8 +3,7 @@
  */
 
 /**
- * TODO: TileMap.getLayers() <--- returns nothing, but should return all layers
- * in progress: importing From tiled
+ * In progress: importing From tiled
  */
 
 class SimpleTile {
@@ -157,9 +156,10 @@ class SimpleTileMap extends Object2D {
      * Slices a tilemap into induvidual tiles
      * @param {Image} image A canvas drawable object, that will get sliced into tiles, based on the atlasData
      * @param {Object} atlasData An object specifying the properties of the tile atlas
+     * @param {Object} tileObject The class, holding the tile's data
      * @returns {Object} An object, where each key is a tile's ID and the value is a new tile 
      */
-    static sliceTiles(image, atlasData) {
+    static sliceTiles(image, atlasData, tileObject = SimpleTile) {
         let tiles = {};
 
         for (let y = 0; y < atlasData.rows; y++) {
@@ -172,7 +172,7 @@ class SimpleTileMap extends Object2D {
                     y: atlasData.tileHeight * y + Math.min(0, atlasData.gapY * (y - 1)),
                 }, false);
 
-                tiles[tileId] = new SimpleTile(tileTexture, tileId, new Vector(x, y));
+                tiles[tileId] = new tileObject(tileTexture, tileId, new Vector(x, y));
             }
         }
 
@@ -689,7 +689,7 @@ class TileMap extends Object2D {
 
         this._setAtlasData(atlasData);
         
-        this.#tiles = SimpleTileMap.sliceTiles(this.atlasTexture.image, this.atlasData);
+        this.#tiles = SimpleTileMap.sliceTiles(this.atlasTexture.image, this.atlasData, Tile);
 
         this.#layers = {};
         this.addLayer("graphics");
@@ -795,21 +795,39 @@ class TileMap extends Object2D {
                 newTilemap.setGrid(newLayer, dataGrid);
             }
 
+            function transformToWorldSpace(tilemap, layer, importData, x, y) {
+                return new Vector(
+                    ((x / importData.tilewidth) + (layer.offsetx / importData.tilewidth)) * tilemap.tileWidth + tilemap.pos.x,
+                    ((y / importData.tileheight) + (layer.offsety / importData.tileheight)) * tilemap.tileHeight + tilemap.pos.y,
+                );
+            }
+
             if (layer.type == "objectgroup") {
                 let newLayer = newTilemap.addLayer("navigation");
-
                 for (let object of layer.objects) {
                     if ("point" in object) {
                         console.log("Point at: ", object.x, object.y, object.width, object.height);
                         newTilemap.addObject(
                             newLayer,
-                            new Point(
-                                ((object.x / importData.tilewidth) + (layer.offsetx / importData.tilewidth)) * newTilemap.tileWidth + newTilemap.pos.x,
-                                ((object.y / importData.tileheight) + (layer.offsety / importData.tileheight)) * newTilemap.tileHeight + newTilemap.pos.y,
-                            )
+                            new Point(...transformToWorldSpace(newTilemap, layer, importData, object.x, object.y).toArray()),
                         );
                     } else if ("polygon" in object) {
                         console.log("Path at: ", object.x, object.y, object.width, object.height);
+
+                        for (let i in object.polygon) {
+                            console.log(object.polygon[i]);
+                            object.polygon[i] = transformToWorldSpace(
+                                newTilemap,
+                                layer,
+                                importData,
+                                object.polygon[i].x,
+                                object.polygon[i].y
+                            ).add(new Vector());
+                        }
+
+                        let newPath = new Path(object.polygon);
+
+                        newTilemap.addObject(newLayer, newPath);
 
                     } else {
                         console.log("Rectangle at: ", object.x, object.y, object.width, object.height);
@@ -941,14 +959,14 @@ class TileMap extends Object2D {
                 if (layerId.search(/collision_[0-9]+/g) == 0) collisionLayers.push(layerId);
                 if (layerId.search(/navigation_[0-9]+/g) == 0) navigationLayers.push(layerId);
             }
-    
+
             // Assure Z index correctness between layers
             graphicsLayers.sort();
             collisionLayers.sort();
             navigationLayers.sort();
 
             // Assure Z index correctness between layer types (used when debug rendering)
-            out.concat(graphicsLayers).concat(collisionLayers).concat(navigationLayers);
+            out = out.concat(graphicsLayers).concat(collisionLayers).concat(navigationLayers);
         } else {
             for (let layerId in this.#layers) {
                 //console.log(layerId);
@@ -1188,7 +1206,7 @@ class TileMap extends Object2D {
                     );
     
                     ctx.fillStyle = `rgba(255, 0, 0, ${tile / 2})`;
-                    ctx.fillRect(...camera.w2cf(tilePos), self.tileSize.sub(new Vector(tileInset)));
+                    ctx.fillRect(...camera.w2cf(tilePos, self.tileSize.sub(new Vector(tileInset))));
                 });
     
                 // Render objects

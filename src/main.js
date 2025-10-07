@@ -72,12 +72,6 @@ function _mainLoop() {
 
     document.getElementById("text").textContent = "";
 
-    setTimeout(update, 400);
-    setTimeout(render, 800);
-
-    return;
-
-
     // Call user defined update function
     if (typeof(update) === typeof(Function)) update();
 

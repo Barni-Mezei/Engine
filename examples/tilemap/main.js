@@ -38,10 +38,9 @@ async function init() {
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ]))
 
-    tilemap.clear("graphics_0", "tile_0_0");
+    /*tilemap.clear("graphics_0", "tile_0_0");
     tilemap.clear("graphics_1", null);
-    tilemap.clear("navigation_0", 0);
-
+    tilemap.clear("navigation_0", 0);*/
 
     editorPos = tilemap.center;
 
