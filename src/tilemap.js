@@ -1139,7 +1139,10 @@ class TileMap extends Object2D {
             this.getGrid(layerId).forEach(function (x, y, tile) {
                 if (tile.id == null) return;
 
-                let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+                let tilePos = new Vector(
+                    self.pos.x + x * self.tileWidth,
+                    self.pos.y + y * self.tileHeight
+                );
 
                 ctx.drawImage(
                     self.getTileById(tile.id).texture,
@@ -1154,7 +1157,10 @@ class TileMap extends Object2D {
                 this.getGrid(layerId).forEach(function (x, y, tile) {
                     if (tile == null) return;
     
-                    let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+                    let tilePos = new Vector(
+                        self.pos.x + x * self.tileWidth,
+                        self.pos.y + y * self.tileHeight
+                    );
     
                     ctx.fillStyle = `rgba(0, 100, 255, ${tile / 2})`;
                     
@@ -1162,35 +1168,37 @@ class TileMap extends Object2D {
                 });
     
                 // Render objects
-                this.#layers[layerId].objects.forEach(function (object, index) {
-                    object.render();
-                });
+                for (let obj of this.#layers[layerId].objects) {
+                    obj.render();
+                };
             }
         }
 
         if (settings.debug.navigation) {
+            let tileInset = 1; // Size of the inset for the nav tiles
+
             for (let layerId of this.getLayers("navigation")) {
                 // Render tiles
                 this.getGrid(layerId).forEach(function (x, y, tile) {
                     if (tile == null) return;
     
-                    let tilePos = self.pos.add(new Vector(x, y).mult(self.tileSize));
+                    let tilePos = new Vector(
+                        self.pos.x + x * self.tileWidth + (tileInset / 2),
+                        self.pos.y + y * self.tileHeight + (tileInset / 2)
+                    );
     
                     ctx.fillStyle = `rgba(255, 0, 0, ${tile / 2})`;
-                    
-                    //new Color();
-
-                    ctx.fillRect(...camera.w2cf(tilePos.add(new Vector(0.5)), self.tileSize.sub(new Vector(1))));
+                    ctx.fillRect(...camera.w2cf(tilePos), self.tileSize.sub(new Vector(tileInset)));
                 });
     
                 // Render objects
-                this.#layers[layerId].objects.forEach(function (object, index) {
-                    object.render();
-                });
+                for (let obj of this.#layers[layerId].objects) {
+                    obj.render();
+                };
             }
         }
 
-        if (gridColor != null) {
+        /*if (gridColor != null) {
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = camera.w2csX(gridThickness);
             ctx.lineJoin = "butt";
@@ -1211,7 +1219,7 @@ class TileMap extends Object2D {
                 ctx.lineTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.bottom));
                 ctx.stroke();
             }
-        }
+        }*/
     }
 
     update() {}
