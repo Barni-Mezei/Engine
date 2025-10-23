@@ -7,7 +7,7 @@ let tilePos = new Vector(); // Tilemap tile coordinate
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(10);
+const GRID_SIZE = new Vector(50);
 
 let DONE = false;
 let ATTEMPTS = 0;
@@ -20,14 +20,14 @@ function fitToView() {
 
 function visualiseEntropy() {
     tilemap.foreach("graphics_0", function (x, y, tile) {
-        tilemap.setTileNavigationAt(0, new Vector(x, y), (tile.meta?.possible?.length / tilemap.tileCount));
+        tilemap.setTileNavigationAt(0, new Vector(x, y), ((tile.meta?.possible?.length ?? 0) + 1) / tilemap.tileCount);
     });
 }
 
 // WFC logic
 
 function getAllowedTiles(currentTile, sideIndex) {
-    if (currentTile == null) return Object.keys(tilemap.tiles);
+    if (currentTile == null) return tilemap.tileIds;
 
     let reversedTileSide = tilemap.getTileMeta(currentTile).sides[sideIndex].split("").reverse().join("");
 
@@ -51,9 +51,7 @@ function updateEntropy(x, y) {
     needsUpdating.push(`${x - 1};${y}`);
 
     let iter = 0;
-    let MAX_ITER = GRID_SIZE.x * GRID_SIZE.y;
-
-
+    let MAX_ITER = 20;
 
     function addIfUnique(array, value) {
         if (!array.includes(value)) array.push(value);
@@ -93,8 +91,8 @@ function updateEntropy(x, y) {
 
         let allowedTiles = new Set(tilemap.getTileMetaAt(0, currrentTilePos, "possible"));
 
-        console.groupCollapsed(currrentTilePos);
-        console.log(`${topTilePos.x};${topTilePos.y}`);
+        /*console.groupCollapsed(currrentTilePos);
+        console.log(`${topTilePos.x};${topTilePos.y}`);*/
 
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y - 1)) {
             let top = [];
@@ -107,9 +105,9 @@ function updateEntropy(x, y) {
                 if (!top.includes(side)) allowedTiles.delete(side);
             }
 
-            console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
+            //console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
             if (oldSize != allowedTiles.size) {
-                console.log("top allows: ", top);
+                //console.log("top allows: ", top);
                 addSides(needsUpdating, currrentTilePos);
             }
         }
@@ -125,9 +123,9 @@ function updateEntropy(x, y) {
                 if (!right.includes(side)) allowedTiles.delete(side);
             }
 
-            console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
+            //console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
             if (oldSize != allowedTiles.size) {
-                console.log("right allows: ", right);
+                //console.log("right allows: ", right);
                 addSides(needsUpdating, currrentTilePos);
             }
         }
@@ -144,9 +142,9 @@ function updateEntropy(x, y) {
                 if (!bottom.includes(side)) allowedTiles.delete(side);
             }
 
-            console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
+            //console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
             if (oldSize != allowedTiles.size) {
-                console.log("bottom allows: ", bottom);
+                //console.log("bottom allows: ", bottom);
                 addSides(needsUpdating, currrentTilePos);
             }
         }
@@ -164,16 +162,16 @@ function updateEntropy(x, y) {
                 if (!left.includes(side)) allowedTiles.delete(side);
             }
 
-            console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
+            //console.log(oldSize, allowedTiles.size, oldSize != allowedTiles.size, needsUpdating);
             if (oldSize != allowedTiles.size) {
-                console.log("left allows: ", left);
+                //console.log("left allows: ", left);
                 addSides(needsUpdating, currrentTilePos);
             }
         }
 
-        console.log("result", allowedTiles);
+        /*console.log("result", allowedTiles);
 
-        console.groupEnd();
+        console.groupEnd();*/
 
         tilemap.setTileMetaAt(0, currrentTilePos, "possible", Array(...allowedTiles));
     }
@@ -182,10 +180,25 @@ function updateEntropy(x, y) {
 function eraseGrid() {
     tilemap.clear("graphics_0", null);
     tilemap.foreach("graphics_0", function (x, y, tile) {
-        tilemap.setTileMetaAt(0, new Vector(x, y), "possible", structuredClone(Object.keys(tilemap.tiles)) );
+        tile.meta.possible = tilemap.tileIds;
     });
 
+    placeRandomTile();
+    placeRandomTile();
+    placeRandomTile();
+    placeRandomTile();
+
     visualiseEntropy();
+}
+
+function placeRandomTile() {
+    let pos = new Vector(randInt(0, tilemap.width), randInt(0, tilemap.height));
+    let chosenTile = tilemap.tileIds[randInt(0, tilemap.tileIds.length - 1)];
+
+    tilemap.setTileAt(0, pos, chosenTile);
+    tilemap.setTileMetaAt(0, pos, "possible", [chosenTile]);
+
+    updateEntropy(pos.x, pos.y);
 }
 
 function iterate() {
@@ -212,11 +225,19 @@ function iterate() {
         return a.entropy - b.entropy;
     });
 
-    let lowestEntropyCell = cells[0];
+    let sameEntropy = cells.length;
+    for (let i = 0; i < cells.length; i++) {
+        if (cells[i].entropy > cells[0].entropy) {
+            sameEntropy = i;
+            break;
+        }
+    }
+
+    let lowestEntropyCell = cells[randInt(0, sameEntropy - 1)];
 
     let possibleValues = tilemap.getTileMetaAt(0, lowestEntropyCell.pos).possible;
 
-    console.log(possibleValues);
+    //console.log(possibleValues);
 
     if (possibleValues.length == 0) {
         ATTEMPTS++;
@@ -237,6 +258,23 @@ function iterate() {
 }
 
 // Game loop
+
+/* TODO:
+
+- left clik to paint tiles
+- right click to erase tiles
+- erased chunks regenerate
+
+- generate in overlapping chunks
+- muti thread in checkerboard chunks, or halves of the map
+
+- select an area to generate in, and press space to start and stop generation.
+  on errorr, a red tile shows up at the impossible spot. if outo-erase is enabled, then a 5x5 area
+  wil be eresed around it and the generation resumes.
+
+- walking character
+
+*/
 
 function init() {
     tilemap = new TileMap("terrain", {tileWidth: 16, tileHeight: 16}, GRID_SIZE.x, GRID_SIZE.y);
@@ -305,7 +343,7 @@ function update() {
         editorPos.x += movementSpeed;
     }
 
-    if (input.mouse.middle) {
+    if (input.mouse.down) {
         editorPos = editorPos.add( new Vector(input.mouse.prevX - input.mouse.x, input.mouse.prevY - input.mouse.y).mult(1 / camera.realZoom) );
     }
 
@@ -325,10 +363,14 @@ function update() {
         fitToView();
     }
 
-    if (isKeyPressed("space")) {
-        for (let i = 0; i < 5; i++) {
+    /*if (isKeyJustPressed("space")) {
+        for (let i = 0; i < 1; i++) {
             iterate();
         }
+    }*/
+
+    for (let i = 0; i < 5; i++) {
+        iterate();
     }
 
     camera.clampValues();
@@ -345,7 +387,8 @@ function update() {
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
-    tilemap.render("#44444488", camera.w2csX(0.5), false, true);
+    //tilemap.render("#44444488", camera.w2csX(2), false, true);
+    tilemap.render("#00000000", 0, false, true);
 
     
     // Current hovered tile

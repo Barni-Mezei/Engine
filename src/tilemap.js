@@ -632,6 +632,12 @@ class TileMap extends Object2D {
     get tileCount() { return Object.keys( this.#tiles ).length; }
 
     /**
+     * @readonly
+     * An array with all tile ids found in the tileset
+     */
+    get tileIds() { return Object.keys( this.#tiles ); }
+
+    /**
      * @type {String|null} The default tile ID to set to new layers
      */
     defaultTile = null;
