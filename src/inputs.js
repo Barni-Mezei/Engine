@@ -51,8 +51,8 @@ let input = {
     },
 
     keys: {
-        justPressed: [],
-        pressed: [],
+        justPressed: new Set(),
+        pressed: new Set(),
     },
 
     sensor: {
@@ -72,52 +72,58 @@ let input = {
     },
 }
 
-window.onkeydown = function (e) {
-    if (!input.keys.pressed.includes(e.key)) {
+window.addEventListener("keydown", function (e) {
+    /*if (!input.keys.pressed.includes(e.key)) {
         input.keys.pressed.unshift(e.key);
-    }
+    }*/
 
-    if (!e.repeat) input.keys.justPressed.unshift(e.key);
-}
-
-window.onkeyup = function (e) {
-    //e.preventDefault();
+   //if (!e.repeat) input.keys.justPressed.unshift(e.key);
     
-    input.keys.pressed = input.keys.pressed.filter( a => a != e.key && a != e.key.toLowerCase() && a != e.key.toUpperCase());
-}
+   input.keys.pressed.add(e.key);
 
-window.onmousedown = function (e) {
+   if (!e.repeat) input.keys.justPressed.add(e.key);
+});
+
+window.addEventListener("keyup", function (e) {
+    //e.preventDefault();
+
+    input.keys.pressed.delete(e.key);
+    input.keys.pressed.delete(e.key.toLowerCase());
+    input.keys.pressed.delete(e.key.toUpperCase());
+
+    //input.keys.pressed = input.keys.pressed.filter( a => a != e.key && a != e.key.toLowerCase() && a != e.key.toUpperCase());
+});
+
+window.addEventListener("mousedown", function (e) {
     if (document.getElementById("debug")?.contains(e.target)) return;
 
     _updateMousePosition(e);
     if (e.button == 0) input.mouse.down = true;
     if (e.button == 1) input.mouse.middle = true;
     if (e.button == 2) input.mouse.right = true;
-}
+});
 
-window.onmouseup = function (e) {
+window.addEventListener("mouseup", function (e) {
     _updateMousePosition(e);
     if (e.button == 0) input.mouse.down = false;
     if (e.button == 1) input.mouse.middle = false;
     if (e.button == 2) input.mouse.right = false;
-}
+});
 
-window.onmousemove = function (e) {
-    _updateMousePosition(e);
-}
+window.addEventListener("mousemove", _updateMousePosition);
 
-window.onwheel = function (e) {
+window.addEventListener("wheel", function (e) {
     _updateMousePosition(e);
 
     input.mouse.wheel = e.deltaY;
 
     if (e.deltaY < 0) input.mouse.wheelUp = true;
     if (e.deltaY > 0) input.mouse.wheelDown = true;
-}
+});
 
-window.onblur = _inputLost;
-window.onfocus = _inputLost;
-window.onmouseleave = _inputLost;
+window.addEventListener("blur", _inputLost);
+window.addEventListener("focus", _inputLost);
+window.addEventListener("mouseleave", _inputLost);
 
 function _inputLost() {
     input.mouse.x = 0;
@@ -125,8 +131,8 @@ function _inputLost() {
     input.mouse.down = false;
     input.mouse.right = false;
 
-    input.keys.pressed = [];
-    input.keys.justPressed = [];
+    input.keys.pressed.clear();
+    input.keys.justPressed.clear();
 }
 
 function _updateMousePosition(e) {
@@ -138,7 +144,7 @@ function _updateMousePosition(e) {
  * Must be called at the end of mainLoop
  */
 function updateInputs() {
-    input.keys.justPressed = [];
+    input.keys.justPressed.clear();
 
     input.mouse.motionX =  input.mouse.x - input.mouse.prevX;
     input.mouse.motionY =  input.mouse.y - input.mouse.prevY;
@@ -154,14 +160,20 @@ function updateInputs() {
     input.mouse.wheelDown = false;
 }
 
-function _testKeyId(filterString, array) {
+/**
+ * Checks if a keycombination is held down or not
+ * @param {String} filterString A string, representing a key combination
+ * @param {Set} set A set of values, representing pressed keys
+ * @returns {Boolean} Is the keycombination, specified in the filterString currently pressed down?
+ */
+function _testKeyId(filterString, set) {
     let parsedString = _parseFilterString(filterString);
 
     let pressed = false;
     
     parsedString.every(and => {
         pressed = and.every(key => {
-            return array.includes(key);
+            return set.has(key);
         });
 
         return !pressed;

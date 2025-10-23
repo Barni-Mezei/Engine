@@ -13,6 +13,91 @@ let navStrength = 0;
 let allLayers = ["graphics_0", "graphics_1", "navigation_0"];
 let currentLayerIndex = 0;
 
+let soldiers = [];
+
+class Soldier extends AnimatedSprite {
+    agent;
+
+    name;
+
+    cooldown = 0;
+    tagetPos = new Vector();
+
+    constructor(pathFollow, color) {
+        let animations = {
+            "idle": new Texture("soldier_idle"),
+            "walk": new Texture("soldier_walk"),
+            "jump": new Texture("soldier_jump"),
+        }
+
+        super(new Vector(), new Vector(100), animations, color);
+
+        this.origin.y = 100;
+        this.origin.x = 50;
+
+        this.agent = pathFollow;
+
+        this.name = new Label2D(`Soldier ${soldiers.length}`);
+        this.name.setSize(16);
+    }
+
+    update() {
+        super.update();
+
+        this.pos = this.agent.pos;
+
+        this.name.setCenter( this.pos.add(new Vector(this.centerOffset.x, 0)) );
+        this.name.pos.y += 20;
+
+        // Set scale
+        /*if (this.agent.path.getPoint(this.agent.lastPointIndex).x < this.pos.x + Math.abs(this.size.x / 2)) {
+            this.scale.x = -1;
+        } else {
+            this.scale.x = 1;
+        }*/
+
+        if (this.agent.lastPointIndex == 0) {
+            this.play("walk");
+        } else {
+            this.play("idle");
+        }
+    }
+
+    render() {
+        super.render();
+
+        if (settings.debug?.boxes) {
+            ctx.strokeStyle = "#ff0000";
+            ctx.beginPath();
+            ctx.moveTo(...camera.w2cXY(this.left, this.top));
+            ctx.lineTo(...camera.w2cXY(this.left, this.bottom));
+            ctx.stroke();
+    
+            ctx.strokeStyle = "#00ff00";
+            ctx.beginPath();
+            ctx.moveTo(...camera.w2cXY(this.right, this.top));
+            ctx.lineTo(...camera.w2cXY(this.right, this.bottom));
+            ctx.stroke();
+    
+            ctx.strokeStyle = "#0088ff";
+            ctx.beginPath();
+            ctx.moveTo(...camera.w2cXY(this.left, this.top));
+            ctx.lineTo(...camera.w2cXY(this.right, this.top));
+            ctx.stroke();
+    
+            ctx.strokeStyle = "#ff00ff";
+            ctx.beginPath();
+            ctx.moveTo(...camera.w2cXY(this.left, this.bottom));
+            ctx.lineTo(...camera.w2cXY(this.right, this.bottom));
+            ctx.stroke();
+        }
+
+        if (distance(...camera.w2cXY(this.center.x, this.center.y), input.mouse.x, input.mouse.y) < camera.w2csX(Math.min(this.size.x, this.size.y) / 2)) {
+            this.name.render();
+        }
+    }
+}
+
 async function init() {
     tilemap = TileMap.importFromTiled("terrain", await FileResource.getJson("tiled_tilemap"));
 
@@ -143,7 +228,28 @@ function update() {
             tilemap.setTileAt(currentLayerIndex, tilePos, null);
         } else {
             tilemap.setTileNavigation(0, tilePos, 1);
+     
+     
         }
+    }
+
+    // Other controls
+    if (isKeyJustPressed("space")) {
+        let newSoldier = new Soldier(
+            new PathFollow(4),
+            "#ff0000"
+        );
+
+        newSoldier.agent.canFinish = false;
+
+        tilemap.layers.navigation_0.objects[0].addAgent(newSoldier.agent);
+
+        soldiers.push(newSoldier);
+
+    }
+
+    for (let soldier of soldiers) {
+        soldier.update();
     }
 }
 
@@ -154,6 +260,10 @@ function render() {
         tilemap.render("#444", camera.w2csX(0.5));
     } else {
         tilemap.render();
+    }
+
+    for (let soldier of soldiers) {
+        soldier.render();
     }
 
     // Center

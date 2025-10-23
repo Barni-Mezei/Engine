@@ -7,8 +7,10 @@ setKeybind("down", "ArrowDown");
 
 setKeybind("q", "q");
 setKeybind("e", "e");
+
 setKeybind("f", "f");
 setKeybind("r", "r");
+
 setKeybind("w", "w");
 setKeybind("a", "a");
 setKeybind("s", "s");
@@ -25,4 +27,9 @@ Resource.loadTexture("../res/small_tiles.png", "terrain");
 Resource.loadFile("./test.json", "terrain_test");
 Resource.loadFile("./map01.json", "tiled_tilemap");
 Resource.loadFile("./map01.json", "tiled_tileset");
+
+Resource.loadTexture("../res/characters.png", "soldier_idle", [0, 0, 32, 32]);
+Resource.loadTexture("../res/characters.png", "soldier_walk", [0, 0, 32, 32], [4, 0.15]);
+Resource.loadTexture("../res/characters.png", "soldier_jump", [32, 0, 32, 32], [4, 0.15]);
+
 Resource.startLoading();

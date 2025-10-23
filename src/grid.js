@@ -110,7 +110,6 @@ class Grid {
             default:
             case "2d":
                 return this.#data;
-                break;
 
             case "1d":
                 let out = [];
@@ -119,7 +118,6 @@ class Grid {
                 }
 
                 return out;
-                break;
         }
     }
 

@@ -319,8 +319,8 @@ class Resource {
         console.groupEnd();
         console.log(`%cAll resources loaded, starting the main loop!`, "font-weight: bold; color: #fff;");
 
-        //Enable playing sounds
-        if (_audioCtx.state === "suspended") _audioCtx.resume();
+        // Enable playing sounds
+        if (_audioCtx.state == "suspended") _audioCtx.resume();
 
         _start();
     }
@@ -463,6 +463,8 @@ class Texture extends BaseResource {
 
         this.image = Texture.canvasFromImage(textureData.image, this.cropData, this.isAnimated);
 
+        if (!this.isAnimated) this.cropData = null;
+
         if (continer != null) continer[this.uid] = this;
     }
 
@@ -477,14 +479,15 @@ class Texture extends BaseResource {
         let imageOffsetY = cropData?.y ?? 0;
 
         if (isAnimated) {
-            imageWidth = image.width;
-            imageHeight = image.height;
-            imageOffsetX = 0;
-            imageOffsetY = 0;
+            return image;
         }
 
         let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
+        //let offCanvas = document.createElement("canvas"); 
         let offCtx = offCanvas.getContext("2d");
+
+        /*offCanvas.width = imageWidth * 2;
+        offCanvas.height = imageHeight * 2;*/
 
         offCtx.imageSmoothingEnabled = false;
         offCtx.imageSmoothingQuality = "low";
@@ -628,14 +631,26 @@ class Texture extends BaseResource {
             imageRenderData[2] *= -1;
         }
 
-        ctx.save();
+        /*ctx.save();
         
-        //Apply rotation
+        // Apply rotation
         ctx.setTransform(1, 0, 0, 1, x, y);
         ctx.rotate(rotation * (Math.PI / 180));
         ctx.translate(imageWidth / 2, imageHeight / 2);
 
-        //Draw cropped image
+        // Draw cropped image
+        ctx.imageSmoothingEnabled = !c.isPixelPerfect;
+        ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
+
+        ctx.restore();*/
+
+        ctx.save();
+        
+        // Apply rotation
+        ctx.rotate(rotation * (Math.PI / 180));
+        ctx.translate(x + imageWidth / 2, y + imageHeight / 2);
+
+        // Draw cropped image
         ctx.imageSmoothingEnabled = !c.isPixelPerfect;
         ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
 

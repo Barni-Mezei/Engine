@@ -2,7 +2,7 @@ let items = {};
 let blocks = {};
 
 let player = {
-    pos: new Vector(),
+    pos: new Vector(200, 200),
     texture : new Texture("player"),
     speed: 1,
 }
@@ -48,21 +48,18 @@ function update() {
     if (isKeyPressed("up")) pos.y -= 10
     if (isKeyPressed("down")) pos.y += 10
 
-    camera.pos.x = -c.width / 2 - 400;
-    camera.pos.y = -c.height / 2 - 400;
-
+    //camera.lookAt(player.pos);
     camera.update();
 }
 
 function render() {
-    ctx.clearRect(0, 0, c.width, c.height);
-    document.getElementById("text").textContent = "";
+    ctx.clearRect(0, 0, c.width,c.height);
 
-    objects.forEach((o, i) => {
+    /*objects.forEach((o, i) => {
         let d = distance(round(player.pos.x, -2), round(player.pos.y, -2), o.pos.x + pos.x, o.pos.y + pos.y);
         d = clamp(300 - d/2, 10, 100);
         camera.renderTexture(o.texture, ...o.pos.toArray(), d, d);
-    });
+    });*/
 
     camera.renderTexture(player.texture, ...player.pos.toArray(), 100, 100);
 
@@ -71,19 +68,4 @@ function render() {
     document.getElementById("text").textContent += `Down: '${input.keys.pressed}'\n`;
     document.getElementById("text").textContent += `Just: '${input.keys.justPressed}'\n`;
     document.getElementById("text").textContent += `Cache size: ${Object.keys(Resource._parallelCache).length}\n`;*/
-    document.getElementById("text").textContent += `Motion: \n`;
-
-    for (let key in debugData) {
-        if (typeof debugData[key] == "function") {
-            document.getElementById("text").textContent += `  ${key}: function () {...}\n`;
-            continue;
-        }
-
-        if (typeof debugData[key] == "string") {
-            document.getElementById("text").textContent += `  ${key}: "${debugData[key]}"\n`;
-            continue;
-        }
-
-        document.getElementById("text").textContent += `  ${key}: ${debugData[key]}\n`;
-    }
 }

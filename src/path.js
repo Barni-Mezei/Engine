@@ -2,6 +2,13 @@
  * Dependencies: vector
  */
 
+/*
+
+TODO: Implement Get closest point on path method
+search 3 closest path points, and check the lines between
+them (2 lines) and return the closest point on those 2 lines
+*/
+
 class Path {
     points = [];
     agents = [];

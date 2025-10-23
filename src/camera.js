@@ -158,6 +158,7 @@ class Camera {
      * @param {Number} margin Inset from width and height
      */
     renderTexture(textureInstance, x, y, width, height, rotation = 0, margin = 0) {
+        if (typeof(textureInstance?.render) !== typeof(Function)) console.error("Invalid instance found:", textureInstance);
         textureInstance.render(...this.worldToCamXY(x, y), ...this.worldToCamSizeXY(width, height), rotation = rotation, margin = margin)
     }
 

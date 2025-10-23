@@ -1,22 +1,5 @@
-window.onresize = _resizeCanvas;
-
-function _resizeCanvas() {
-    // Ensure the canvas is pixel perfect
-    c.width = round(c.offsetWidth);
-    c.height = round(c.offsetHeight);
-}
-
-_resizeCanvas();
-
-settings.camera.slideSpeed = 0.05;
-settings.camera.zoomSpeed = 1;
-
-camera.zoom = 0.5;
-
-let debugData;
-
-//camera.rounded = 0;
-//camera.isFinite = true;
+camera.settings.glideSpeed = 0.1;
+//camera.zoom = 0.5;
 
 setKeybind("moveUp", "w")
 setKeybind("moveLeft", "a")

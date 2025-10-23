@@ -253,7 +253,7 @@ class SimpleTileMap extends Object2D {
                 } else {
                     return result === null ? (current.type == layerName ? index : null) : result;
                 }
-            }
+            },
         );
 
         // No tile layer found
@@ -815,14 +815,13 @@ class TileMap extends Object2D {
                         console.log("Path at: ", object.x, object.y, object.width, object.height);
 
                         for (let i in object.polygon) {
-                            console.log(object.polygon[i]);
                             object.polygon[i] = transformToWorldSpace(
                                 newTilemap,
                                 layer,
                                 importData,
-                                object.polygon[i].x,
-                                object.polygon[i].y
-                            ).add(new Vector());
+                                object.polygon[i].x + object.x,
+                                object.polygon[i].y + object.y,
+                            );
                         }
 
                         let newPath = new Path(object.polygon);

@@ -133,10 +133,10 @@ function _mainLoop() {
 }
 
 // Start script when the body is loaded
-document.body.onload = function (e) {
+window.addEventListener("load", function () {
     _bodyLoaded = true;
     _start();
-}
+});
 
 async function _start() {
     if (!_bodyLoaded) return; // document.body is not loaded

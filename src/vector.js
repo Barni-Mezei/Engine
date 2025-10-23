@@ -58,8 +58,8 @@ class Vector {
     }
 
     /**
-     * The 0°-> is to the right, and increases CW
-     * @param {Number} angle Direction of the vector in DEGREES
+     * Creates a new unit vector pointing in the specified direction
+     * @param {Number} angle Direction of the vector in DEGREES (The 0°-> is to the right, and increases CW)
      * @param {Number} length Length of the vector
      * @returns {Vector}
      */

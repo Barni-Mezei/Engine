@@ -15,14 +15,14 @@ function init() {
         let x = randInt(-40, 40) * 50;
         let y = randInt(-40, 40) * 50;
 
-        //setAnimationDelay(textureInstanceId, i % 20);
-
         objects.push({
             pos: new Vector(x, y),
 
             texture: textureInstance,
         });
     }
+
+    //player.texture = new Texture("player");
 }
 
 function update() {
@@ -45,7 +45,7 @@ function update() {
     if (isKeyPressed("add")) camera.zoom += 0.1;
     if (isKeyPressed("sub")) camera.zoom -= 0.1;
 
-    camera.zoom = clamp(camera.zoom, settings.camera.minZoom, settings.camera.maxZoom);
+    camera.clampValues();
 
     if (isKeyJustPressed("space")) {
         follow = !follow;
@@ -60,13 +60,16 @@ function update() {
 
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
-    document.getElementById("text").textContent = "";
 
     objects.forEach((o, i) => {
         camera.renderTexture(o.texture, ...o.pos.toArray(), 50, 50);
     });
 
     camera.renderTexture(player.texture, ...player.pos.toArray(), 100, 100);
+
+    /*ctx.fillStyle = "#888888";
+    ctx.fillRect(0, 0, 200, 200);
+    ctx.drawImage(objects[0].texture.image, 0, 0, 200, 200);*/
 
     document.getElementById("text").textContent += `Player pos: ${round(player.pos.x, 0)}, ${round(player.pos.y, 0)}\n`;
     document.getElementById("text").textContent += `Following: ${follow}\n`;

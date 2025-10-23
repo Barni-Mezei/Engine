@@ -262,3 +262,5 @@ array1dOr2d() // 1d
 mapOrFor() // For
 objectOrClass() // Reading: class, updating in place: class
 arrayCreation() // Array(<size>).fill(<value>)
+
+// todo: static method or prototype.a() if faster to call, because static is still ijnstantiated
