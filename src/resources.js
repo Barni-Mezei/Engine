@@ -475,6 +475,7 @@ class Texture extends BaseResource {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
 
+
         let imageOffsetX = cropData?.x ?? 0;
         let imageOffsetY = cropData?.y ?? 0;
 
@@ -485,6 +486,9 @@ class Texture extends BaseResource {
         let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
         //let offCanvas = document.createElement("canvas"); 
         let offCtx = offCanvas.getContext("2d");
+
+        console.log(imageWidth, imageHeight, offCanvas.width, offCanvas.height);
+
 
         /*offCanvas.width = imageWidth * 2;
         offCanvas.height = imageHeight * 2;*/

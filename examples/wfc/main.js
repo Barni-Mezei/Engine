@@ -1,26 +1,66 @@
 /** @type {TileMap} */
 let tilemap;
 
-let editorPos = new Vector();
-let cursorPos = new Vector();
-let tilePos = new Vector();
+let editorPos = new Vector(); // World coordinate
+let cursorPos = new Vector(); // Snapped world space coordinate
+let tilePos = new Vector(); // Tilemap tile coordinate
 
-let currentTile = "";
-let currentTileIndex = 0;
+let currentTileId = ""; // Name of the current tile
 
-let navStrength = 0;
+const GRID_SIZE = new Vector(5);
 
-let allLayers = ["graphics_0", "graphics_1", "navigation_0"];
-let currentLayerIndex = 0;
+function fitToView() {
+    editorPos = tilemap.center;
+    camera.zoom = (Math.min(c.width, c.height) / Math.max(tilemap.size.x, tilemap.size.y)) * 0.9;
+}
 
-const GRID_SIZE = new Vector(5, 5);
+function iterate() {
+    tilemap.foreach("graphics_0", function (x, y, cell) {
+        console.log(x, y, cell);
+    });
+}
 
 function init() {
     tilemap = new TileMap("terrain", {tileWidth: 16, tileHeight: 16}, GRID_SIZE.x, GRID_SIZE.y);
 
-    tilemap.clear("graphics_0", "tile_0_0");
+    /*
+    w: Water
+    s: Sand
+    g: Grass
+    m: Meadow
+    f: Forest
+    p: Path
+    */
 
-    console.log(tilemap);
+    function addTileRotated(y, name, sides, weight) {
+        tilemap.setTileMeta(`tile_0_${y}`, "sides", [sides[0], sides[1], sides[2], sides[3]]);
+        tilemap.setTileMeta(`tile_1_${y}`, "sides", [sides[3], sides[0], sides[1], sides[2]]);
+        tilemap.setTileMeta(`tile_2_${y}`, "sides", [sides[2], sides[3], sides[0], sides[1]]);
+        tilemap.setTileMeta(`tile_3_${y}`, "sides", [sides[1], sides[2], sides[3], sides[0]]);
+
+        for (let i = 0; i < 4; i++) tilemap.setTileMeta(`tile_${i}_${y}`, "weight", weight);
+        for (let i = 0; i < 4; i++) tilemap.renameTile(`tile_${i}_${y}`, );
+    }
+
+    let iota = 0;
+    addTileRotated(iota++, "water", ["www", "www", "www", "www"], 1);
+    addTileRotated(iota++, "forest", ["fff", "fff", "fff", "fff"], 1);
+    addTileRotated(iota++, "", ["ggg", "ggg", "ggg", "ggg"], 1);
+    addTileRotated(iota++, "", ["ppp", "ppp", "ppp", "ppp"], 1);
+    addTileRotated(iota++, "", ["wsg", "ggg", "gsw", "www"], 1);
+    addTileRotated(iota++, "", ["wsg", "ggg", "ggg", "gsw"], 1);
+    addTileRotated(iota++, "", ["wsg", "gsw", "www", "www"], 1);
+    addTileRotated(iota++, "", ["fmg", "ggg", "gmf", "fff"], 1);
+    addTileRotated(iota++, "", ["fmg", "ggg", "ggg", "gmf"], 1);
+    addTileRotated(iota++, "", ["fmg", "gmf", "fff", "fff"], 1);
+    addTileRotated(iota++, "", ["gpg", "ggg", "gpg", "ggg"], 1);
+    addTileRotated(iota++, "", ["gpg", "gpg", "ggg", "ggg"], 1);
+    addTileRotated(iota++, "", ["gpg", "gpg", "ggg", "gpg"], 1);
+    addTileRotated(iota++, "", ["gpg", "ggg", "ggg", "ggg"], 1);
+
+    tilemap.clear("graphics_0", "tile_0_2");
+
+    console.dir(tilemap.tiles);
 
     // Add navigation
     /*tilemap.clear("navigation_0", 1);
@@ -41,9 +81,7 @@ function init() {
     tilemap.clear("graphics_1", null);
     tilemap.clear("navigation_0", 0);*/
 
-    editorPos = tilemap.center;
-
-    //camera.settings.rounded = true;
+    fitToView();
 }
 
 function update() {
@@ -82,6 +120,14 @@ function update() {
         if (camera.zoom > camera.settings.minZoom) editorPos = camera.c2w(Vector.fromObject(input.mouse).sub(c.center).mult(-0.11).add(c.center));
     }
 
+    if (isKeyPressed("f")) {
+        fitToView();
+    }
+
+    if (isKeyJustPressed("space")) {
+        iterate();
+    }
+
     camera.clampValues();
     camera.lookAt(editorPos, true);
     camera.update();
@@ -90,18 +136,23 @@ function update() {
     cursorPos = camera.c2w(Vector.fromObject(input.mouse)).sub(tilemap.tileSize.mult(0.5));
     tilePos = cursorPos.mult(1 / tilemap.tileWidth).round()
     cursorPos = tilePos.mult(tilemap.tileWidth);
+    currentTileId = tilemap.getTileAt(0, tilePos);
 }
 
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
-    tilemap.render("#444", camera.w2csX(0.5));
+    tilemap.render("#44444488", camera.w2csX(0.5));
 
-    // Center
-    /*ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(...camera.w2cXY(editorPos.x, editorPos.y), 10, 0, Math.PI * 2);
-    ctx.fill()*/
+    
+    // Current hovered tile
+
+    if (currentTileId != null) {
+        ctx.drawImage(
+            tilemap.getTileById(currentTileId).texture,
+            c.width - 50, 0, 50, 50
+        );
+    }
 
     // Tile cursor
     ctx.strokeStyle = "#00ddff";
@@ -110,5 +161,6 @@ function render() {
     ctx.rect(...camera.w2cf(cursorPos, tilemap.tileSize));
     ctx.stroke()
 
-    document.getElementById("text").innerText += `Current tile [${currentTileIndex}]: ${currentTile}` + "\n";
+    document.getElementById("text").innerText += `Cursor: ${tilePos.x};${tilePos.y}` + "\n";
+    document.getElementById("text").innerText += `CursoCurrent tile: ${currentTileId}` + "\n";
 }

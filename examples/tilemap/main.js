@@ -228,8 +228,6 @@ function update() {
             tilemap.setTileAt(currentLayerIndex, tilePos, null);
         } else {
             tilemap.setTileNavigation(0, tilePos, 1);
-     
-     
         }
     }
 

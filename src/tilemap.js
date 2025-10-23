@@ -103,14 +103,14 @@ class SimpleTileMap extends Object2D {
 
         // Complete atlas size
         if (this.atlasData.rows == null) {
-            this.atlasData.rows = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
-            this.atlasData.columns = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+            this.atlasData.rows = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+            this.atlasData.columns = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
         }
 
         // Complete tile size
         if (this.atlasData.tileWidth == null) {
-            this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.rows;
-            this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.columns;
+            this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.columns;
+            this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.rows;
         }
     }
 
@@ -407,7 +407,7 @@ class SimpleTileMap extends Object2D {
      * Set a tile's metadata on the tilemap
      * @param {Vector} tilePos The tile position on the tilemap
      * @param {String} key The key to set the value at
-     * @param {Any} value The value to set
+     * @param {*} value The value to set
      */
     setLocalTileMeta(tilePos, key, value) {
         let tile = this.grid.getCell(tilePos.x, tilePos.y);
@@ -419,7 +419,7 @@ class SimpleTileMap extends Object2D {
      * Sets a tile's metadata in the tile atlas
      * @param {String} tileId The ID of the tile, whose data will be set
      * @param {String} key The key to set the value at
-     * @param {Any} value The value to set
+     * @param {*} value The value to set
      */
     setTileMeta(tileId, key, value) {
         if (!(tileId in this.tiles)) return;
@@ -431,7 +431,7 @@ class SimpleTileMap extends Object2D {
      * Sets a tile's metadata in the tile atlas
      * @param {Vector} atlasPos Tile position in the tile atlas
      * @param {String} key The key to set the value at
-     * @param {Any} value The value to set
+     * @param {*} value The value to set
      */
     setTileMetaAt(atlasPos, key, value) {
         for (let tileId in this.tiles) {
@@ -712,14 +712,14 @@ class TileMap extends Object2D {
 
         // Complete atlas size
         if (this.atlasData.rows == null) {
-            this.atlasData.rows = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
-            this.atlasData.columns = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+            this.atlasData.rows = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+            this.atlasData.columns = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
         }
 
         // Complete tile size
         if (this.atlasData.tileWidth == null) {
-            this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.rows;
-            this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.columns;
+            this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.columns;
+            this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.rows;
         }
     }
 
@@ -744,7 +744,9 @@ class TileMap extends Object2D {
 
             let offCanvas = new OffscreenCanvas(...camera.w2csXY(this.tileWidth, this.tileHeight));
             let offCtx = offCanvas.getContext("2d");
+            
             offCtx.imageSmoothingEnabled = !c.isPixelPerfect;
+            offCtx.imageSmoothingQuality = "low";
 
             offCtx.drawImage(
                 tile.texture,
@@ -754,7 +756,7 @@ class TileMap extends Object2D {
             /*this.#tiles[tileId].texture = offCanvas;
             this.#tiles[tileId].pattern = offCtx.createPattern(offCanvas, "repeat");*/
 
-            tile.texture = offCanvas;
+            //tile.texture = offCanvas;
             tile.pattern = offCtx.createPattern(offCanvas, "repeat");
         }
     }
@@ -855,7 +857,7 @@ class TileMap extends Object2D {
         return newTilemap;
     }
 
-    static exportToTiled(fileName) {}
+    static exportToTiled(fileName) {throw Error("Not implemented")}
 
     /**
      * Creates a new layer in the tilemap
@@ -1025,23 +1027,62 @@ class TileMap extends Object2D {
         return this.#layers[layerId].objects;
     }
 
-    // Tiles array
-    renameTile(tileId, key) {}
+    /**
+     * Changes a tile's ID to the specified one (WARNING: TileIDs in the tilemap, will not be updated, so you need to replace them with the new tile id)
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} newTileId The new ID of this tile in the tileset
+     */
+    renameTile(tileId, newTileId) {
+        if (!(tileId in this.tiles)) return;
 
-    setTileMeta(tileId, key, value) {}
-    getTileMeta(tileId, key) {}
+        // Add new tile
+        this.tiles[newTileId] = this.tiles[tileId];
+        this.tiles[newTileId].id = newTileId;
 
+        // Remove old tile
+        delete this.tiles[tileId];
+    }
+
+    /**
+     * Sets the metadata for a tile in the tileset. Later placed tiles in the grid will inherit it
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} key The key of the metadata
+     * @param {*} value The value of the metadata
+     */
+    setTileMeta(tileId, key, value) {
+        if (!(tileId in this.#tiles)) return;
+
+        this.#tiles[tileId].meta[key] = value;
+    }
+
+    /**
+     * 
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} key The key of the metadata
+     * @returns {*|null} The value at the specified key OR null if no key found
+     */
+    getTileMeta(tileId, key) {
+        if (!(tileId in this.#tiles)) return null;
+
+        return this.#tiles[tileId].meta[key];
+    }
+
+    /**
+     * Returns with a tile from the tileset, with the specified ID
+     * @param {String} tileId The ID of a tile from the tileset
+     * @returns {Object} The data of the specified tile from the tileset
+     */
     getTileById(tileId) {
         if (!(tileId in this.#tiles)) return null;
 
         return this.#tiles[tileId];
     }
 
-    getTileByAtlasPos(atlasPos) {}
+    getTileByAtlasPos(atlasPos) {throw Error("Not implemented")}
 
     /**
-     * Returns with the first tile in the tilemap (it is NOT necessary the first on the atlas texture)
-     * @returns {Object}
+     * Returns with the first tile in the tilemap 
+     * @returns {Object} The data of the first tile in the tileset (It is NOT necessary the first tile on the atlas texture)
      */
     getFirstTile() {
         if (this.#tiles == {}) return null;
@@ -1049,18 +1090,18 @@ class TileMap extends Object2D {
         return this.#tiles[ Object.keys(this.#tiles)[0] ];
     }
 
-    setTileAutotile(tileId, neighbors) {}
-    setTileAutotileDirection(tileId, direction = "top", connectionID) {} /* top top_right right bottom_right bottom bottom_left left top_left*/
-    setTileAutotileIndex(tileId, index, connectionID) {}
-    getTileAutotile(tileId) {}
+    setTileAutotile(tileId, neighbors) {throw Error("Not implemented")}
+    setTileAutotileDirection(tileId, direction = "top", connectionID) {throw Error("Not implemented")} /* top top_right right bottom_right bottom bottom_left left top_left*/
+    setTileAutotileIndex(tileId, index, connectionID) {throw Error("Not implemented")}
+    getTileAutotile(tileId) {throw Error("Not implemented")}
 
-    getAutotile(tileID, neighbors) {} /* [] connectionID or null if unknown returns a tile id*/
+    getAutotile(tileID, neighbors) {throw Error("Not implemented")} /* [] connectionID or null if unknown returns a tile id*/
 
     // Multi layer
-    setTileMetaAt(layerId, tilePos, key, value) {}
-    getTileMetaAt(layerId, tilePos, key) {}
+    setTileMetaAt(layerId, tilePos, key, value) {throw Error("Not implemented")}
+    getTileMetaAt(layerId, tilePos, key) {throw Error("Not implemented")}
 
-    getColumnAt(tilePos) {}
+    getColumnAt(tilePos) {throw Error("Not implemented")}
 
     /**
      * Sets a tile on the tilemap's specified graphics layer
@@ -1104,23 +1145,43 @@ class TileMap extends Object2D {
         }
     }
 
-    fill(layerId, tileId, tilePos) {} /* paint bucket. fills only the tile it starts on */
-    foreach(layerId, callback) {} /* calls the fuinction on every tile */
-    map(layerId, callback) {} /* sets the tile to what the callback returns with */
+    fill(layerId, tileId, tilePos) {throw Error("Not implemented")} /* paint bucket. fills only the tile it starts on */
+
+    /**
+     * Executes the provided callback function on each tile on the specified layer
+     * @param {String} layerId The ID of a layer (example: "graphics_0")
+     * @param {Function} callback The function which will get called on every tile. Parameters:
+     * - x: The X coordinate of the current tile
+     * - y: The Y coordinate of the current tile
+     * - cell: The tile itself
+     */
+    foreach(layerId, callback) {
+        this.getGrid(layerId).forEach(callback);
+    }
+
+    map(layerId, callback) {throw Error("Not implemented")} /* sets the tile to what the callback returns with */
 
     /* [[Vector(0,0), Vector(0,1)], [Vector(1,1)]] array of positions. positions are tiles on  an island */
-    getIslands(layerId, emptyTileFunction /* returns a bool, if the tile is empty */) {}
+    getIslands(layerId, emptyTileFunction /* returns a bool, if the tile is empty */) {throw Error("Not implemented")}
 
     // Special
     // Collision
-    setTileCollision(collisionLayer, tilePos, value) {}
-    setAllTileCollision(collisionLayer, tilePos, collisionsOnLayers /* array */) {}
-    getTileCollision(collisionLayer, tilePos) {}
-    getAllTileCollision(tilePos) {} /* ret artray of layer collisions */
+    setTileCollision(collisionLayer, tilePos, value) {throw Error("Not implemented")}
+    setAllTileCollision(collisionLayer, tilePos, collisionsOnLayers /* array */) {throw Error("Not implemented")}
+    getTileCollision(collisionLayer, tilePos) {throw Error("Not implemented")}
+    getAllTileCollision(tilePos) {throw Error("Not implemented")} /* ret artray of layer collisions */
 
-    isColliding(layerIds /* array of layer ids */,point  /* world pos coordinate vec2 */) {}
+    isColliding(layerIds /* single layer id, or array of layer ids */,point  /* world pos coordinate: vec2 */) {throw Error("Not implemented")}
 
     // Navigation
+
+    /**
+     * Sets a navigation tile value on the specified navigation layer
+     * @param {Number} navLayer The number of a graphics layer
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @param {Number} travelCost The cost to travel through this tile (Higher values make this tile less visited)
+     * This value can be any number, the ratio between tiles, is what matters. (generally 1 means a wall and 0 means a clear way)
+     */
     setTileNavigation(navLayer, tilePos, travelCost /* high makes a wall */) {
         if (typeof travelCost != "number") return 1;
 
@@ -1132,14 +1193,21 @@ class TileMap extends Object2D {
         grid.setCell(tilePos.x, tilePos.y, travelCost);
     }
 
-    getTileNavigation(navLayer, tilePos) {}
+    getTileNavigation(navLayer, tilePos) {throw Error("Not implemented")}
 
     /* {tiles: [Vector(0,0) ...], path: [Vector() ...]} returns array of tile pos + a world coord point list for path creation */
-    findPath(navLayer, startPos, endPos, algorithm = "astar") {} 
+    findPath(navLayer, startPos, endPos, algorithm = "astar") {throw Error("Not implemented")} 
 
-    _updateCollision(collisionLayer /* null to update all layers */) {} /* greedy meshes collision layers */
-    _updateNavigation(navLayer /* null to update all layers */) {} /* greedy meshes nav layers */
+    _updateCollision(collisionLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes collision layers */
+    _updateNavigation(navLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes nav layers */
 
+    /**
+     * Renders all tiles in the tilemap on to the main canvas
+     * @param {String} gridColor A color to draw the grid lines with (if null, no gridlines wil be drawn)
+     * @param {Number} gridThickness The thickness of the gridlines (in pixels)
+     * @param {Boolean} collision Render collision layers? (debug option)
+     * @param {Boolean} navigation  Render navigation layers? (debug option)
+     */
     render(gridColor = null, gridThickness = null, collision = false, navigation = false) {
         /*
         Layer render order:
@@ -1160,6 +1228,8 @@ class TileMap extends Object2D {
                     self.pos.x + x * self.tileWidth,
                     self.pos.y + y * self.tileHeight
                 );
+
+                ctx.imageSmoothingEnabled = !c.isPixelPerfect;
 
                 ctx.drawImage(
                     self.getTileById(tile.id).texture,
@@ -1215,7 +1285,7 @@ class TileMap extends Object2D {
             }
         }
 
-        /*if (gridColor != null) {
+        if (gridColor != null) {
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = camera.w2csX(gridThickness);
             ctx.lineJoin = "butt";
@@ -1236,7 +1306,7 @@ class TileMap extends Object2D {
                 ctx.lineTo(...camera.w2cXY(this.pos.x + x * this.tileWidth, this.bottom));
                 ctx.stroke();
             }
-        }*/
+        }
     }
 
     update() {}
