@@ -15,7 +15,11 @@ function fitToView() {
 }
 
 function iterate() {
+
+    let remainingCells = tilemap.filter("graphics_0")
+
     tilemap.foreach("graphics_0", function (x, y, cell) {
+        if (cell.id != null) return;
         console.log(x, y, cell);
     });
 }
@@ -39,28 +43,32 @@ function init() {
         tilemap.setTileMeta(`tile_3_${y}`, "sides", [sides[1], sides[2], sides[3], sides[0]]);
 
         for (let i = 0; i < 4; i++) tilemap.setTileMeta(`tile_${i}_${y}`, "weight", weight);
-        for (let i = 0; i < 4; i++) tilemap.renameTile(`tile_${i}_${y}`, );
+        for (let i = 0; i < 4; i++) tilemap.renameTile(`tile_${i}_${y}`, `${name}_${i}`);
     }
 
     let iota = 0;
-    addTileRotated(iota++, "water", ["www", "www", "www", "www"], 1);
-    addTileRotated(iota++, "forest", ["fff", "fff", "fff", "fff"], 1);
-    addTileRotated(iota++, "", ["ggg", "ggg", "ggg", "ggg"], 1);
-    addTileRotated(iota++, "", ["ppp", "ppp", "ppp", "ppp"], 1);
-    addTileRotated(iota++, "", ["wsg", "ggg", "gsw", "www"], 1);
-    addTileRotated(iota++, "", ["wsg", "ggg", "ggg", "gsw"], 1);
-    addTileRotated(iota++, "", ["wsg", "gsw", "www", "www"], 1);
-    addTileRotated(iota++, "", ["fmg", "ggg", "gmf", "fff"], 1);
-    addTileRotated(iota++, "", ["fmg", "ggg", "ggg", "gmf"], 1);
-    addTileRotated(iota++, "", ["fmg", "gmf", "fff", "fff"], 1);
-    addTileRotated(iota++, "", ["gpg", "ggg", "gpg", "ggg"], 1);
-    addTileRotated(iota++, "", ["gpg", "gpg", "ggg", "ggg"], 1);
-    addTileRotated(iota++, "", ["gpg", "gpg", "ggg", "gpg"], 1);
-    addTileRotated(iota++, "", ["gpg", "ggg", "ggg", "ggg"], 1);
+    addTileRotated(iota++, "water",              ["www", "www", "www", "www"], 1);
+    addTileRotated(iota++, "forest",             ["fff", "fff", "fff", "fff"], 1);
+    addTileRotated(iota++, "grass",              ["ggg", "ggg", "ggg", "ggg"], 1);
+    addTileRotated(iota++, "path_crossing",      ["ppp", "ppp", "ppp", "ppp"], 1);
+    addTileRotated(iota++, "shore",              ["wsg", "ggg", "gsw", "www"], 1);
+    addTileRotated(iota++, "water_corner",       ["wsg", "ggg", "ggg", "gsw"], 1);
+    addTileRotated(iota++, "island_corner",      ["wsg", "gsw", "www", "www"], 1);
+    addTileRotated(iota++, "forest_edge",        ["fmg", "ggg", "gmf", "fff"], 1);
+    addTileRotated(iota++, "corner_forest_edge", ["fmg", "ggg", "ggg", "gmf"], 1);
+    addTileRotated(iota++, "clearing_corner",    ["fmg", "gmf", "fff", "fff"], 1);
+    addTileRotated(iota++, "staright_path",      ["gpg", "ggg", "gpg", "ggg"], 1);
+    addTileRotated(iota++, "corner_path",        ["gpg", "gpg", "ggg", "ggg"], 1);
+    addTileRotated(iota++, "path_junction",      ["gpg", "gpg", "ggg", "gpg"], 1);
+    addTileRotated(iota++, "square",             ["gpg", "ggg", "ggg", "ggg"], 1);
 
-    tilemap.clear("graphics_0", "tile_0_2");
+    tilemap.clear("graphics_0", null);
 
-    console.dir(tilemap.tiles);
+    tilemap.setTileAt(0, new Vector(1, 1), "water_corner_0");
+
+    //console.dir(tilemap.tiles);
+
+    console.dir(tilemap.getTileMetaAt(0, new Vector(), "sides"));
 
     // Add navigation
     /*tilemap.clear("navigation_0", 1);

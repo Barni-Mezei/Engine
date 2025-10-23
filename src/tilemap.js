@@ -711,13 +711,13 @@ class TileMap extends Object2D {
         }
 
         // Complete atlas size
-        if (this.atlasData.rows == null) {
+        if (!this.atlasData.rows) {
             this.atlasData.rows = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
             this.atlasData.columns = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
         }
 
         // Complete tile size
-        if (this.atlasData.tileWidth == null) {
+        if (!this.atlasData.tileWidth) {
             this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.columns;
             this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.rows;
         }
@@ -950,7 +950,7 @@ class TileMap extends Object2D {
     getLayers(layerType = null) {
         let out = [];
         
-        if (layerType == null) {
+        if (layerType === null) {
             let graphicsLayers = [];
             let collisionLayers = [];
             let navigationLayers = [];
@@ -1002,7 +1002,7 @@ class TileMap extends Object2D {
 
     /** Returns with the specified layer's grid object, or null if the layer is invalid
      * @param {String} layerId The ID of a layer (example: "graphics_0")
-     * @returns {Object|null}
+     * @returns {Object|null} The layer's grid or null
      */
     getGrid(layerId) {
         return this.#layers[layerId]?.grid ?? null;
@@ -1028,7 +1028,7 @@ class TileMap extends Object2D {
     }
 
     /**
-     * Changes a tile's ID to the specified one (WARNING: TileIDs in the tilemap, will not be updated, so you need to replace them with the new tile id)
+     * Changes a tile's ID to the specified one (WARNING: TileIDs on the tilemap, will not be updated, so you need to replace them with the new tile id)
      * @param {String} tileId The ID of a tile from the tileset
      * @param {String} newTileId The new ID of this tile in the tileset
      */
@@ -1058,13 +1058,17 @@ class TileMap extends Object2D {
     /**
      * 
      * @param {String} tileId The ID of a tile from the tileset
-     * @param {String} key The key of the metadata
-     * @returns {*|null} The value at the specified key OR null if no key found
+     * @param {String|null} key The key of the metadata or null. If set to null, all metadata will be returned
+     * @returns {*|null} The value at the specified key or null, if no key found or no tile found
      */
-    getTileMeta(tileId, key) {
+    getTileMeta(tileId, key = null) {
         if (!(tileId in this.#tiles)) return null;
 
-        return this.#tiles[tileId].meta[key];
+        if (key === null) {
+            return this.#tiles[tileId].meta;
+        } else {
+            return this.#tiles[tileId].meta[key] ?? null;
+        }
     }
 
     /**
@@ -1081,7 +1085,7 @@ class TileMap extends Object2D {
     getTileByAtlasPos(atlasPos) {throw Error("Not implemented")}
 
     /**
-     * Returns with the first tile in the tilemap 
+     * Returns with the first tile in the tileset
      * @returns {Object} The data of the first tile in the tileset (It is NOT necessary the first tile on the atlas texture)
      */
     getFirstTile() {
@@ -1098,10 +1102,8 @@ class TileMap extends Object2D {
     getAutotile(tileID, neighbors) {throw Error("Not implemented")} /* [] connectionID or null if unknown returns a tile id*/
 
     // Multi layer
-    setTileMetaAt(layerId, tilePos, key, value) {throw Error("Not implemented")}
-    getTileMetaAt(layerId, tilePos, key) {throw Error("Not implemented")}
-
-    getColumnAt(tilePos) {throw Error("Not implemented")}
+    
+    getColumnAt(tilePos) {throw Error("Not implemented")} /* dict with a single tile from every layer at the position */
 
     /**
      * Sets a tile on the tilemap's specified graphics layer
@@ -1118,7 +1120,7 @@ class TileMap extends Object2D {
 
         let tile = grid.getCell(tilePos.x, tilePos.y);
         tile.id = tileId;
-        tile.meta = tileMeta ?? {};
+        tile.meta = tileMeta ?? this.getTileMeta(tileId) ?? {};
         grid.setCell(tilePos.x, tilePos.y, tile);
     }
 
@@ -1129,9 +1131,50 @@ class TileMap extends Object2D {
      * @returns {String|null} Returns with a tile ID or null
      */
     getTileAt(graphicsLayer, tilePos) {
-        return this.getGrid("graphics_"+graphicsLayer).getCell(tilePos.x, tilePos.y, null)?.id ?? null;
+        return this.getGrid("graphics_"+graphicsLayer)?.getCell(tilePos.x, tilePos.y, null)?.id ?? null;
     }
-    
+
+    /**
+     * Sets a tile's metadata on the specified graphics layer 
+     * @param {Number} graphicsLayer The number of a graphics layer
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @param {String} key The key of the metadata
+     * @param {*} value The value of the metadata
+     */
+    setTileMetaAt(graphicsLayer, tilePos, key, value) {
+        let grid = this.getGrid("graphics_"+graphicsLayer);
+
+        if (!grid) return;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return;
+
+        let tile = grid.getCell(tilePos.x, tilePos.y);
+        tile.meta[key] = value;
+        //grid.setCell(tilePos.x, tilePos.y, tile);
+    }
+
+    /**
+     * Returns with the metadata of a tile on the tilemap
+     * @param {Number} graphicsLayer The number of a graphics layer
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @param {String|null} key The key of the metadata or null. If set to null, all metadata will be returned
+     * @returns {*|null} The value at the specified key or null, if no key found or no tile found
+     */
+    getTileMetaAt(graphicsLayer, tilePos, key = null) {
+        let grid = this.getGrid("graphics_"+graphicsLayer);
+
+        if (!grid) return;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return;
+
+        let tile = grid.getCell(tilePos.x, tilePos.y);
+
+        if (key === null) {
+            return tile.meta;
+        } else {
+            return tile.meta[key] ?? null;
+        }
+    }
+
+
     /**
      * Replaces all tiles on the specified layer with the gicven tile
      * @param {String} layerId The ID of a layer (example: "graphics_0")
@@ -1139,7 +1182,13 @@ class TileMap extends Object2D {
      */
     clear(layerId, tileId) {
         if (layerId.search(/graphics_[0-9]+/g) == 0) {
-            this.#layers[layerId].grid.fill({id: tileId, meta: {}});
+            if (tileId === null) {
+                this.#layers[layerId].grid.fill({id: tileId, meta: {}});
+            } else {
+                let tileMeta = this.getTileMeta(tileId);
+                if (!tileMeta) return;
+                this.#layers[layerId].grid.fill({id: tileId, meta: structuredClone(tileMeta)});
+            }
         } else {
             this.#layers[layerId].grid.fill(tileId);
         }
@@ -1156,10 +1205,36 @@ class TileMap extends Object2D {
      * - cell: The tile itself
      */
     foreach(layerId, callback) {
-        this.getGrid(layerId).forEach(callback);
+        this.getGrid(layerId)?.forEach(callback);
     }
 
     map(layerId, callback) {throw Error("Not implemented")} /* sets the tile to what the callback returns with */
+    
+    /**
+     * Returns a new grid with only a few tiles selected from the specified layer
+     * @param {String} layerId The ID of a layer (example: "graphics_0")
+     * @param {Function} callback The function which will get called on every tile. Parameters:
+     * - x: The X coordinate of the current tile
+     * - y: The Y coordinate of the current tile
+     * - cell: The tile itself
+     * Must return with a boolean value, which determines if the tile will be kept in the returned grid (true) or not (false)
+     * @returns {Grid|null} Returns a copy of the tile layer, with only the filtered tiles there, or null if an error is happened
+     * WARNING: Thge cell values are not cloned, so if the leyer is a graphical layer, then modifying anything in the filtered grid,
+     * will affect the actual layer!
+     */
+    filter(layerId, callback) {
+        let grid = this.getGrid(layerId);
+
+        if (!grid) return null;
+
+        let out = new Grid(grid.width, grid.height, null, grid.hashFunction);
+
+        grid.forEach(function (x, y, tile) {
+            if (callback(x, y, tile)) out.setCell(x, y, tile);
+        });
+
+        return out;
+    }
 
     /* [[Vector(0,0), Vector(0,1)], [Vector(1,1)]] array of positions. positions are tiles on  an island */
     getIslands(layerId, emptyTileFunction /* returns a bool, if the tile is empty */) {throw Error("Not implemented")}
@@ -1202,7 +1277,7 @@ class TileMap extends Object2D {
     _updateNavigation(navLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes nav layers */
 
     /**
-     * Renders all tiles in the tilemap on to the main canvas
+     * Renders all tiles on the tilemap on to the main canvas
      * @param {String} gridColor A color to draw the grid lines with (if null, no gridlines wil be drawn)
      * @param {Number} gridThickness The thickness of the gridlines (in pixels)
      * @param {Boolean} collision Render collision layers? (debug option)
@@ -1222,7 +1297,7 @@ class TileMap extends Object2D {
         for (let layerId of this.getLayers("graphics")) {
             // Render tiles
             this.getGrid(layerId).forEach(function (x, y, tile) {
-                if (tile.id == null) return;
+                if (tile.id === null) return;
 
                 let tilePos = new Vector(
                     self.pos.x + x * self.tileWidth,
@@ -1242,7 +1317,7 @@ class TileMap extends Object2D {
             for (let layerId of this.getLayers("collision")) {
                 // Render tiles
                 this.getGrid(layerId).forEach(function (x, y, tile) {
-                    if (tile == null) return;
+                    if (tile === null) return;
     
                     let tilePos = new Vector(
                         self.pos.x + x * self.tileWidth,
@@ -1267,7 +1342,7 @@ class TileMap extends Object2D {
             for (let layerId of this.getLayers("navigation")) {
                 // Render tiles
                 this.getGrid(layerId).forEach(function (x, y, tile) {
-                    if (tile == null) return;
+                    if (tile === null) return;
     
                     let tilePos = new Vector(
                         self.pos.x + x * self.tileWidth + (tileInset / 2),

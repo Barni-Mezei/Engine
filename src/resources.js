@@ -487,9 +487,6 @@ class Texture extends BaseResource {
         //let offCanvas = document.createElement("canvas"); 
         let offCtx = offCanvas.getContext("2d");
 
-        console.log(imageWidth, imageHeight, offCanvas.width, offCanvas.height);
-
-
         /*offCanvas.width = imageWidth * 2;
         offCanvas.height = imageHeight * 2;*/
 
