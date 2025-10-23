@@ -475,7 +475,6 @@ class Texture extends BaseResource {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
 
-
         let imageOffsetX = cropData?.x ?? 0;
         let imageOffsetY = cropData?.y ?? 0;
 
@@ -487,8 +486,8 @@ class Texture extends BaseResource {
         //let offCanvas = document.createElement("canvas"); 
         let offCtx = offCanvas.getContext("2d");
 
-        /*offCanvas.width = imageWidth * 2;
-        offCanvas.height = imageHeight * 2;*/
+        /*offCanvas.width = imageWidth;
+        offCanvas.height = imageHeight;*/
 
         offCtx.imageSmoothingEnabled = false;
         offCtx.imageSmoothingQuality = "low";
@@ -496,7 +495,7 @@ class Texture extends BaseResource {
         offCtx.drawImage(
             image,
             imageOffsetX, imageOffsetY, imageWidth, imageHeight,
-            0, 0, imageHeight, imageHeight
+            0, 0, imageWidth, imageHeight
         );
 
         return offCanvas;

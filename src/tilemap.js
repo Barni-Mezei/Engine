@@ -1174,7 +1174,6 @@ class TileMap extends Object2D {
         }
     }
 
-
     /**
      * Replaces all tiles on the specified layer with the gicven tile
      * @param {String} layerId The ID of a layer (example: "graphics_0")
