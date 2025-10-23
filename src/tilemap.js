@@ -604,11 +604,13 @@ class TileMap extends Object2D {
     #height = 0;
 
     /**
+     * @readonly
      * Width of the tilemap (in tiles)
      */
     get width() { return this.#width; }
 
     /**
+     * @readonly
      * Height of the tilemap (in tiles)
      */
     get height() { return this.#height; }
@@ -622,6 +624,12 @@ class TileMap extends Object2D {
      * @readonly
      */
     get tiles() { return this.#tiles; }
+
+    /**
+     * @readonly
+     * Number of tiles in the tileset
+     */
+    get tileCount() { return Object.keys( this.#tiles ).length; }
 
     /**
      * @type {String|null} The default tile ID to set to new layers
@@ -1056,7 +1064,7 @@ class TileMap extends Object2D {
     }
 
     /**
-     * 
+     * Returns with the metadata of thisa tile, stored at the specified key, or all metadata if the key is omitted
      * @param {String} tileId The ID of a tile from the tileset
      * @param {String|null} key The key of the metadata or null. If set to null, all metadata will be returned
      * @returns {*|null} The value at the specified key or null, if no key found or no tile found
@@ -1216,7 +1224,7 @@ class TileMap extends Object2D {
      * - x: The X coordinate of the current tile
      * - y: The Y coordinate of the current tile
      * - cell: The tile itself
-     * Must return with a boolean value, which determines if the tile will be kept in the returned grid (true) or not (false)
+     * - Must return with a boolean value, which determines if the tile will be kept in the returned grid (true) or not (false)
      * @returns {Grid|null} Returns a copy of the tile layer, with only the filtered tiles there, or null if an error is happened
      * WARNING: Thge cell values are not cloned, so if the leyer is a graphical layer, then modifying anything in the filtered grid,
      * will affect the actual layer!
@@ -1256,7 +1264,7 @@ class TileMap extends Object2D {
      * @param {Number} travelCost The cost to travel through this tile (Higher values make this tile less visited)
      * This value can be any number, the ratio between tiles, is what matters. (generally 1 means a wall and 0 means a clear way)
      */
-    setTileNavigation(navLayer, tilePos, travelCost /* high makes a wall */) {
+    setTileNavigationAt(navLayer, tilePos, travelCost /* high makes a wall */) {
         if (typeof travelCost != "number") return 1;
 
         let grid = this.getGrid("navigation_"+navLayer);
@@ -1267,7 +1275,14 @@ class TileMap extends Object2D {
         grid.setCell(tilePos.x, tilePos.y, travelCost);
     }
 
-    getTileNavigation(navLayer, tilePos) {throw Error("Not implemented")}
+    getTileNavigationAt(navLayer, tilePos) {
+        let grid = this.getGrid("navigation_"+navLayer);
+
+        if (!grid) return;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return;
+
+        return grid.getCell(tilePos.x, tilePos.y);
+    }
 
     /* {tiles: [Vector(0,0) ...], path: [Vector() ...]} returns array of tile pos + a world coord point list for path creation */
     findPath(navLayer, startPos, endPos, algorithm = "astar") {throw Error("Not implemented")} 
@@ -1312,7 +1327,7 @@ class TileMap extends Object2D {
             });
         }
 
-        if (settings.debug.collision) {
+        if (collision) {
             for (let layerId of this.getLayers("collision")) {
                 // Render tiles
                 this.getGrid(layerId).forEach(function (x, y, tile) {
@@ -1335,7 +1350,7 @@ class TileMap extends Object2D {
             }
         }
 
-        if (settings.debug.navigation) {
+        if (navigation) {
             let tileInset = 1; // Size of the inset for the nav tiles
 
             for (let layerId of this.getLayers("navigation")) {

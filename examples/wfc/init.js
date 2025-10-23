@@ -21,7 +21,7 @@ setKeybind("sub", "\\-");
 
 addDebugOption("autoRestart", "Restart automatically", "bool", false);
 
-document.getElementById("debug").classList.remove("hidden");
+//document.getElementById("debug").classList.remove("hidden");
 
 Resource.loadTexture("../res/tile_set_01.png", "terrain");
 Resource.loadTexture("../res/characters.png", "player", [0,0, 32,32]);

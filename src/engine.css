@@ -63,6 +63,8 @@ div#debug .item {
     align-items: center;
     justify-content: stretch;
     gap: 5px;
+
+    margin-top: 1em;
 }
 
 div#debug input {
