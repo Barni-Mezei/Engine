@@ -57,6 +57,10 @@ div#debug * {
     font-family: inherit;
 }
 
+div#debug pre#text {
+    overflow-x: hidden;
+}
+
 div#debug .item {
     display: flex;
     flex-flow: row nowrap;

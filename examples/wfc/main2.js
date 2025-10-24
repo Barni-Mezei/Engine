@@ -10,7 +10,52 @@ let lastCell = new Vector();
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(20);
+const colors = {
+    "s": "#ffff00", // Sand
+    "S": "#ffffff", // Skull
+    "r": "#333322", // Ridge
+    "R": "#333322", // Big ridge
+    "h": "#74743fff", // Hole
+
+    // Special connectors
+    "1": "#ff0000",
+    "2": "#00ff00",
+    "3": "#0000ff",
+    "4": "#ff00ff",
+    "5": "#a6c400ff",
+    "6": "#00ffff",
+    "7": "#ffffff",
+    "8": "#fc7100ff",
+    "9": "#f700ffff",
+    "a": "#00ff95ff",
+    "b": "#6200ffff",
+    "c": "#91ff00ff",
+    "d": "#ff0000",
+    "e": "#00ff00",
+    "f": "#0000ff",
+    "g": "#ff00ff",
+    //"h": "",
+    "i": "#00ffff",
+    "j": "#ffffff",
+    "k": "#fc7100ff",
+    "l": "#f700ffff",
+    "m": "#00ff95ff",
+    "n": "#6200ffff",
+    "o": "#91ff00ff",
+    "p": "#ff0000",
+    "q": "#00ff00",
+    //"r": "",
+    //"s": "",
+    "t": "#a6c400ff",
+    "u": "#00ffff",
+    "v": "#ffffff",
+    "w": "#fc7100ff",
+    "x": "#f700ffff",
+    "y": "#00ff95ff",
+    "z": "#6200ffff",
+}
+
+const GRID_SIZE = new Vector(10);
 
 let DONE = false;
 let ATTEMPTS = 0;
@@ -23,7 +68,7 @@ function fitToView() {
 
 function visualiseEntropy() {
     tilemap.foreach("graphics_0", function (x, y, tile) {
-        tilemap.setTileNavigationAt(0, new Vector(x, y), ((tile.meta?.possible?.length ?? 0) + 1) / tilemap.tileCount);
+        tilemap.setTileNavigationAt(0, new Vector(x, y), ((tile.meta?.possible?.length ?? 0) + 1) / (tilemap.tileCount + 1));
     });
 }
 
@@ -54,7 +99,7 @@ function updateEntropy(x, y) {
     needsUpdating.push(`${x - 1};${y}`);
 
     let iter = 0;
-    let MAX_ITER = GRID_SIZE.x * GRID_SIZE.y;
+    let MAX_ITER = 10 //GRID_SIZE.x * GRID_SIZE.y;
 
     function addIfUnique(array, value) {
         if (!array.includes(value)) array.push(value);
@@ -182,19 +227,22 @@ function updateEntropy(x, y) {
 
 function eraseGrid() {
     tilemap.clear("graphics_0", null);
-    tilemap.foreach("graphics_0", function (x, y, tile) {
-        tile.meta.possible = tilemap.tileIds;
-    });
 
-    visualiseEntropy();
+    tilemap.setGrid("graphics_0", new Grid(GRID_SIZE.x, GRID_SIZE.y, {id: null, meta: {possible: tilemap.tileIds}}))
+    /*tilemap.foreach("graphics_0", function (x, y, tile) {
+        tile.meta.possible = tilemap.tileIds;
+    });*/
+
+    placeRandomTile("sand_" + randInt(0, 5));
+
+    //visualiseEntropy();
 }
 
-function placeRandomTile() {
+function placeRandomTile(tileId) {
     let pos = new Vector(randInt(0, tilemap.width), randInt(0, tilemap.height));
-    let chosenTile = tilemap.tileIds[randInt(0, tilemap.tileIds.length - 1)];
 
-    tilemap.setTileAt(0, pos, chosenTile);
-    tilemap.setTileMetaAt(0, pos, "possible", [chosenTile]);
+    tilemap.setTileAt(0, pos, tileId);
+    tilemap.setTileMetaAt(0, pos, "possible", [tileId]);
 
     updateEntropy(pos.x, pos.y);
 }
@@ -211,7 +259,7 @@ function eraseSection(centerX, centerY, width, height) {
         }
     }
 
-    visualiseEntropy();
+    //visualiseEntropy();
 }
 
 function iterate() {
@@ -246,7 +294,8 @@ function iterate() {
         }
     }
 
-    let lowestEntropyCell = cells[randInt(0, sameEntropy - 1)];
+    //let lowestEntropyCell = cells[randInt(0, sameEntropy - 1)];
+    let lowestEntropyCell = cells[0];
 
     let possibleValues = tilemap.getTileMetaAt(0, lowestEntropyCell.pos).possible;
 
@@ -254,19 +303,19 @@ function iterate() {
 
     if (possibleValues.length == 0) {
         ATTEMPTS++;
-        console.log("%cRestarting...", "font-size: 20px; color: #ff4400;");
+        //console.log("%cRestarting...", "font-size: 20px; color: #ff4400;");
 
         //tilemap.setTileAt(0, lowestEntropyCell.pos, "error_0");
         //tilemap.setTileMetaAt(0, lowestEntropyCell.pos, "possible", tilemap.tileIds);
-        DONE = true;
+        //DONE = true;
 
-        console.log(cells);
+        //console.log(cells);
 
         markerPos = lastCell;
 
         //eraseSection(lastCell, lastCell, 1, 1);
 
-        //eraseGrid();
+        eraseGrid();
         return;
     }
 
@@ -277,7 +326,7 @@ function iterate() {
     tilemap.setTileMetaAt(0, lowestEntropyCell.pos, "possible", [chosenTile]);
 
     updateEntropy(lastCell.x, lastCell.y);
-    visualiseEntropy();
+    //visualiseEntropy();
 
     lastCell = lowestEntropyCell.pos;
 
@@ -304,52 +353,130 @@ function iterate() {
 */
 
 function init() {
-    tilemap = new TileMap("terrain", {tileWidth: 16, tileHeight: 16}, GRID_SIZE.x, GRID_SIZE.y);
+    tilemap = new TileMap("desert", {tileWidth: 32, tileHeight: 32}, GRID_SIZE.x, GRID_SIZE.y);
 
-    /*
-    w: Water
-    s: Sand
-    g: Grass
-    m: Meadow
-    f: Forest
-    p: Path
-    */
+    for (let tile of tilemap.tileIds) {
+        tilemap.setTileMeta(tile, "weight", 1);
+        tilemap.setTileMeta(tile, "sides", ["??1??", "??2??", "??3??", "??4??"]);
 
-    function addTileRotated(y, name, sides, weight) {
-        tilemap.setTileMeta(`tile_0_${y}`, "sides", [sides[0], sides[1], sides[2], sides[3]]);
-        tilemap.setTileMeta(`tile_1_${y}`, "sides", [sides[3], sides[0], sides[1], sides[2]]);
-        tilemap.setTileMeta(`tile_2_${y}`, "sides", [sides[2], sides[3], sides[0], sides[1]]);
-        tilemap.setTileMeta(`tile_3_${y}`, "sides", [sides[1], sides[2], sides[3], sides[0]]);
+    }
 
-        for (let i = 0; i < 4; i++) {
-            tilemap.setTileMeta(`tile_${i}_${y}`, "weight", weight);
-            tilemap.renameTile(`tile_${i}_${y}`, `${name}_${i}`);
+    function addTile(x, y, name, sides, weight) {
+        tilemap.setTileMeta(`tile_${x}_${y}`, "sides", [sides[0], sides[1], sides[2], sides[3]]);
+        tilemap.setTileMeta(`tile_${x}_${y}`, "weight", weight);
+        tilemap.renameTile(`tile_${x}_${y}`, `${name}`);
+    }
+
+    function addFeature(startX, startY, width, height, name, letter, rules) {
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let tileX = startX + x;
+                let tileY = startY + y;
+
+                let sides = [];
+
+                for (let i = 0; i < 4; i++) {
+                    if (rules[y][x][i] == "x") {
+                        sides.push("sssss");
+                    } else {
+                        sides.push(`s${letter}${rules[y][x][i]}${letter}s`);
+                    }
+                }
+
+                addTile(tileX, tileY, `${name}_${x}_${y}`, sides, 1);
+            }
         }
     }
 
-    let iota = 0;
-    addTileRotated(iota++, "water",              ["www", "www", "www", "www"], 1);
-    addTileRotated(iota++, "forest",             ["fff", "fff", "fff", "fff"], 1);
-    addTileRotated(iota++, "grass",              ["ggg", "ggg", "ggg", "ggg"], 1);
-    addTileRotated(iota++, "path_crossing",      ["gpg", "gpg", "gpg", "gpg"], 1);
-    addTileRotated(iota++, "shore",              ["wsg", "ggg", "gsw", "www"], 1);
-    addTileRotated(iota++, "water_corner",       ["wsg", "ggg", "ggg", "gsw"], 1);
-    addTileRotated(iota++, "island_corner",      ["wsg", "gsw", "www", "www"], 1);
-    addTileRotated(iota++, "forest_edge",        ["fmg", "ggg", "gmf", "fff"], 1);
-    addTileRotated(iota++, "corner_forest_edge", ["fmg", "ggg", "ggg", "gmf"], 1);
-    addTileRotated(iota++, "clearing_corner",    ["fmg", "gmf", "fff", "fff"], 1);
-    addTileRotated(iota++, "staright_path",      ["gpg", "ggg", "gpg", "ggg"], 1);
-    addTileRotated(iota++, "corner_path",        ["gpg", "gpg", "ggg", "ggg"], 1);
-    addTileRotated(iota++, "path_junction",      ["gpg", "gpg", "ggg", "gpg"], 1);
-    addTileRotated(iota++, "square",             ["gpg", "ggg", "ggg", "ggg"], 1);
+    // Sand tiles
+    addTile(0, 0, "sand_0",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(1, 0, "sand_1",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(2, 0, "sand_2",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 0, "sand_3",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(2, 1, "sand_4",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 1, "sand_5",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(2, 2, "sand_6",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 2, "sand_7",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 3, "sand_8",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 4, "sand_9",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(3, 5, "sand_10", ["sssss", "sssss", "sssss", "sssss"], 1);
 
-    addTileRotated(iota++, "error",              ["xxx", "yxx", "xyx", "yyx"], 1);
+    // Strict small ridge, always 2x2
+    addFeature(0,1, 2,2, "ridge", "r", [
+        ["x12x", "xx31"],
+        ["24xx", "3xx4"],
+    ]);
+
+    // Strict hole, always 3x3
+    /*addFeature(0,3, 3,3, "hole", "h", [
+        ["x12x", "x341", "xx53"],
+        ["267x", "4896", "5xa8"],
+        ["7bxx", "9cxb", "axxc"],
+    ]);*/
+
+    // Variable sized hole
+    addFeature(0,3, 3,3, "hole", "h", [
+        ["x12x", "x131", "xx41"],
+        ["232x", "3333", "4x43"],
+        ["25xx", "35x5", "4xx5"],
+    ]);
+
+    // Strict crater, always 3x3
+    addFeature(0,6, 3,3, "crater", "l", [
+        ["x12x", "x341", "xx53"],
+        ["267x", "4896", "5xa8"],
+        ["7bxx", "9cxb", "axxc"],
+    ]);
+
+    // Strict 5x3 template
+    /*addFeature(0,9, 3,5, "", "A", [
+        ["x12x", "x341", "xx53"],
+        ["267x", "4896", "5xa8"],
+        ["7bcx", "9deb", "axfd"],
+        ["cghx", "eijg", "fxki"],
+        ["hlxx", "jmxl", "kxxm"],
+    ]);*/
+
+    // Strict big ridge, always 3x5
+    /*addFeature(0,9, 3,5, "big_ridge", "n", [
+        ["????", "x12x", "xx31"],
+        ["x45x", "2674", "3x86"],
+        ["59ax", "7bc9", "8xxb"],
+        ["adxx", "cxed", "????"],
+        ["????", "exxx", "????"],
+    ]);*/
+
+    // Strict small crater, always 2x2
+    addFeature(0,14, 2,2, "small_crater", "c", [
+        ["x12x", "xx31"],
+        ["24xx", "3xx4"],
+    ]);
+
+    // Strict 4x5 template
+    /*addFeature(0,16, 4,5, "", "B", [
+        ["x12x", "x341", "x563", "xx75"],
+        ["289x", "4ab8", "6cda", "7xec"],
+        ["9fgx", "bhif", "djkh", "exlj"],
+        ["gmnx", "iopm", "kqro", "rxsq"],
+        ["ntxx", "puxt", "rvxu", "sxxv"],
+    ]);*/
+
+    //Skull, always 4x5
+    /*addFeature(0,16, 4,5, "", "z", [
+        ["x12x", "x341", "x563", "xx75"],
+        ["289x", "4ab8", "6cda", "7xec"],
+        ["9fgx", "bhif", "djkh", "exlj"],
+        ["gmxx", "iopm", "kqro", "rxsq"],
+        ["???", "puxx", "rvxu", "sxxv"],
+    ]);*/
+
 
     eraseGrid();
 
+    
     // Initialise camera
     fitToView();
-    visualiseEntropy();
+    //visualiseEntropy();
 }
 
 function update() {
@@ -406,14 +533,16 @@ function update() {
     currentTileId = tilemap.getTileAt(0, tilePos);
 
     // Tilemap updating functions
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 10; i++) {
         iterate();
     }
 
 
-    /*if (isKeyPressed("space")) {
-        iterate();
-    }*/
+    if (isKeyPressed("space")) {
+    ATTEMPTS = 0;
+        eraseGrid();
+        DONE = false;
+    }
 
     if (input.mouse.right) {
         eraseSection(tilePos.x, tilePos.y, 5, 5);
@@ -424,26 +553,63 @@ function update() {
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
-    //tilemap.render("#44444488", camera.w2csX(2), false, true);
-    tilemap.render("#00000000", 0, false, true);
+    tilemap.render("#44444488", camera.w2csX(0.5), false, true);
+    //tilemap.render("#00000000", 0, false, true);
 
     
     // Current hovered tile
     if (currentTileId != null) {
+        let currentSides = tilemap.getTileMeta(currentTileId).sides;
+        let iconSize = new Vector(100);
+        let dotGap = new Vector(iconSize.x / currentSides[0].length, iconSize.y / currentSides[1].length);
+        let startX = c.width - iconSize.x;
+        let startY = 0;
+
         ctx.drawImage(
             tilemap.getTileById(currentTileId).texture,
-            c.width - 100, 0, 100, 100
+            startX, startY, iconSize.x, iconSize.y
         );
+
+
+        for (let i = 0; i < currentSides[0].length; i++) {
+            // Top edge
+            ctx.fillStyle = colors[currentSides[0][i]] ?? "#000000";
+
+            ctx.beginPath();
+            ctx.arc(startX + (i + 0.5) * dotGap.x, startY + 5, 5, 0, Math.PI*2);
+            ctx.fill();
+
+            // Right edge
+            ctx.fillStyle = colors[currentSides[1][i]] ?? "#000000";
+
+            ctx.beginPath();
+            ctx.arc(startX + iconSize.x - 5, startY + (i + 0.5) * dotGap.x, 5, 0, Math.PI*2);
+            ctx.fill();
+
+            // Bottom edge
+            ctx.fillStyle = colors[currentSides[2][i]] ?? "#000000";
+
+            ctx.beginPath();
+            ctx.arc(startX + (i + 0.5) * dotGap.x, startY + iconSize.y - 5, 5, 0, Math.PI*2);
+            ctx.fill();
+
+            // Left edge
+            ctx.fillStyle = colors[currentSides[3][i]] ?? "#000000";
+
+            ctx.beginPath();
+            ctx.arc(startX + 5, startY + (i + 0.5) * dotGap.x, 5, 0, Math.PI*2);
+            ctx.fill();
+        }
     }
 
     // Marker
-    if (markerPos.x > -1) {
+    /*if (markerPos.x > -1) {
         ctx.strokeStyle = "#ff0000";
         ctx.lineWidth = camera.w2csX(4);
         ctx.beginPath();
         ctx.rect(...camera.w2cf(markerPos.mult(tilemap.tileSize), tilemap.tileSize));
         ctx.stroke()
-    }
+    }*/
 
     // Tile cursor
     /*ctx.strokeStyle = "#00ddff";
