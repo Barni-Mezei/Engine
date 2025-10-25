@@ -71,11 +71,10 @@ class Label2D extends Object2D {
         ctx.fillStyle = this.color;
         ctx.fillText(this.text, ...camera.w2cXY(this.left, this.bottom));
 
-
         if (settings.debug?.boxes) {
             ctx.strokeStyle = this.color;
             ctx.beginPath();
-            ctx.strokeRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
+            ctx.strokeRect(...camera.w2cf(this.pos, this.size));
         }
     }
 }

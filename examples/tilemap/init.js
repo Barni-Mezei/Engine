@@ -21,12 +21,12 @@ setKeybind("sub", "\\-");
 
 addDebugOption("grid", "Show grid", "bool", true);
 addDebugOption("collision", "Show colliders", "bool", false);
-addDebugOption("navigation", "Show navigation", "bool", true);
-addDebugOption("boxes", "Show boxes", "bool", true);
+addDebugOption("navigation", "Show navigation", "bool", false);
+addDebugOption("boxes", "Show boxes", "bool", false);
 
 setDebugMenu(true);
 
-Resource.loadTexture("../res/small_tiles.png", "terrain");
+Resource.loadTexture("../res/small_tiles.png", "terrain", [0,0, 64,64], [2, 0.25]);
 Resource.loadFile("./test.json", "terrain_test");
 Resource.loadFile("./map01.json", "tiled_tilemap");
 Resource.loadFile("./map01.json", "tiled_tileset");

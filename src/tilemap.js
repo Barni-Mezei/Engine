@@ -156,10 +156,9 @@ class SimpleTileMap extends Object2D {
      * Slices a tilemap into induvidual tiles
      * @param {Image} image A canvas drawable object, that will get sliced into tiles, based on the atlasData
      * @param {Object} atlasData An object specifying the properties of the tile atlas
-     * @param {Object} tileObject The class, holding the tile's data
      * @returns {Object} An object, where each key is a tile's ID and the value is a new tile 
      */
-    static sliceTiles(image, atlasData, tileObject = SimpleTile) {
+    static sliceTiles(image, atlasData) {
         let tiles = {};
 
         for (let y = 0; y < atlasData.rows; y++) {
@@ -172,7 +171,7 @@ class SimpleTileMap extends Object2D {
                     y: atlasData.tileHeight * y + Math.min(0, atlasData.gapY * (y - 1)),
                 }, false);
 
-                tiles[tileId] = new tileObject(tileTexture, tileId, new Vector(x, y));
+                tiles[tileId] = new SimpleTile(tileTexture, tileId, new Vector(x, y));
             }
         }
 
@@ -537,23 +536,72 @@ class SimpleTileMap extends Object2D {
     }
 }
 
-class Tile extends SimpleTile {
-    /*
-    0 top,
-    1 top-right,
-    2 right,
-    3 bottom-right,
-    4 bottom,
-    5 bottom-left,
-    6 left
-    7 top-left,
 
-    Neighbor indexes:
-        7 0 1
-        6   2
-        5 4 3
+
+
+
+/**
+ * Tile in the tileset of the tilemap
+ */
+class Tile {
+    /**
+    - 0 top,
+    - 1 top-right,
+    - 2 right,
+    - 3 bottom-right,
+    - 4 bottom,
+    - 5 bottom-left,
+    - 6 left
+    - 7 top-left,
+
+    Neighbor indexes are in a clockwise order:  
+        `7 0 1`  
+        `6   2`  
+        `5 4 3`  
     */
     autotile = [];
+
+    /**
+     * The ID of the tile
+     */
+    id = ""; // Tile name
+
+    /**
+     * Atlas coordinates
+     */
+    atlasPos = new Vector();
+
+    /**
+     * Metadata about the tile
+     */
+    meta = {};
+
+    /**
+     * The actual texture of the tile
+     */
+    texture;
+
+    /**
+     * The patter, which can be used a fillStyle to render this tile
+     */
+    pattern;
+
+    constructor(texture, tileId, atlasPos) {
+        this.texture = texture;
+        this.id = tileId;
+        this.atlasPos = atlasPos;
+
+        this.meta = {};
+        this.pattern = ctx.createPattern(texture, "repeat");
+        this.char = null;
+    }
+
+    toObject() {
+        return {
+            id: structuredClone(this.id),
+            meta: structuredClone(this.meta),
+        }
+    }
 
     constructor(texture, tileId, atlasPos) {
         super(texture, tileId, atlasPos);
@@ -703,7 +751,7 @@ class TileMap extends Object2D {
 
         this._setAtlasData(atlasData);
         
-        this.#tiles = SimpleTileMap.sliceTiles(this.atlasTexture.image, this.atlasData, Tile);
+        this.#tiles = SimpleTileMap.sliceTiles(this.atlasTexture, this.atlasData);
 
         this.#layers = {};
         this.addLayer("graphics");
@@ -773,6 +821,34 @@ class TileMap extends Object2D {
             //tile.texture = offCanvas;
             tile.pattern = offCtx.createPattern(offCanvas, "repeat");
         }
+    }
+
+    /**
+     * Slices a tilemap into induvidual tiles
+     * @param {Texture} texture A loaded texture instance
+     * @param {Object} atlasData An object specifying the properties of the tile atlas
+     * @returns {Object} An object, where each key is a tile's ID and the value is a new tile 
+     */
+    static sliceTiles(texture, atlasData) {
+        let tiles = {};
+
+        for (let y = 0; y < atlasData.rows; y++) {
+            for (let x = 0; x < atlasData.columns; x++) {
+                let tileId = SimpleTileMap._getTileIdFromCoords(x, y);
+                let tileImage = Texture.canvasFromImage(image, {
+                    width: atlasData.tileWidth,
+                    height: atlasData.tileHeight,
+                    x: atlasData.tileWidth * x + Math.min(0, atlasData.gapX * (x - 1)),
+                    y: atlasData.tileHeight * y + Math.min(0, atlasData.gapY * (y - 1)),
+                }, false);
+
+                let tileTexture = new Texture(texture.id, null);
+
+                tiles[tileId] = new Tile(tileTexture, tileId, new Vector(x, y));
+            }
+        }
+
+        return tiles;
     }
 
     static importFromTiled(atlasTextureId, importData) {

@@ -21,18 +21,38 @@ canvasFillScreen();
 buildDebugMenu();
 
 /**
- * Delta time, and fps calculations
+ * Delta time, fps and ups calculations
  */
 let time = {
-    elapsed: 0, // Total elapsed time, since start
-    _frames: 0, // Number of frames in the measures fps interval
-    delta: 0, // Delta time between frames
+    scale: 1,
 
-    buffer: [], // Frame time buffer
-    bufferSize: 5, // Maximum length of the buffer
+    fps: { // Frames per second
+        value: 60,
+        delta: 0,
 
-    measureFrame: 0,
-    measureDelta: 0,
+        samples: 0,
+
+        buffer: [],
+        bufferSize: 4,
+
+        elapsed: 0,
+        lastMeasured: 0,
+        lastMeasuredDelta: 0,
+    },
+
+    ups: { // Updates per second
+        value: 120,
+        delta: 0,
+
+        samples: 0,
+
+        buffer: [],
+        bufferSize: 1,
+
+        elapsed: 0,
+        lastMeasured: 0,
+        lastMeasuredDelta: 0,
+    },
 }
 
 /**
@@ -43,7 +63,7 @@ let settings = {
     enableAudio: true,
 
     debug: {
-        fpsUpdateInterval: 1000, // Milliseconds between fps updates, larger intervals are more precise
+        fpsUpdateInterval: 1000, // Milliseconds between fps updates. (Larger intervals are more precise)
     },
 }
 
@@ -58,53 +78,47 @@ let frameCounter = 0;
 let camera = new Camera(new Vector());
 
 /**
- * Whenever the dosument is loaded already
+ * Whenever the document is loaded already
  */
 let _bodyLoaded = false;
 
-function _mainLoop() {
-    frameCounter++;
-    time._frames++;
-    time.elapsed = performance.now();
-    time.delta = time.elapsed - time.measureDelta;
+function _updateTime(timeUnit) {
+    // Calculate current fps or ups
+    let currentValue = makeFinite(time[timeUnit].samples * (1000 / settings.debug.fpsUpdateInterval));
+
+    // Add to rolling buffer
+    time[timeUnit].buffer.push(currentValue);
+    if (time[timeUnit].buffer.length > time[timeUnit].bufferSize) time[timeUnit].buffer.unshift();
+
+        // Calculate average fps
+        time[timeUnit].value = Math.round(time[timeUnit].buffer.reduce((a, b) => (a + b)) / time[timeUnit].buffer.length);
+
+        time[timeUnit].lastMeasured = time[timeUnit].elapsed;
+        time[timeUnit].samples = 0;
+}
+
+async function _updateLoop() {
+    time.ups.samples++;
+    time.ups.elapsed = performance.now();
+    time.ups.delta = time.ups.elapsed - time.ups.lastMeasuredDelta;
 
     Resource.update();
 
-    document.getElementById("text").textContent = "";
-
     // Call user defined update function
-    if (typeof(update) === typeof(Function)) update();
-
-    // Call user defined render function
-    if (typeof(render) === typeof(Function)) render();
+    if (typeof(update) === typeof(Function)) await update(time.ups.delta);
 
     // Show / hide debug menu
     if (isKeyJustPressed("debug")) {
         document.getElementById("debug").classList.toggle("hidden");
     }
 
-    /*document.getElementById("text").textContent += "Pressed: " + input.keys.pressed + "\n";
-    document.getElementById("text").textContent += "J. pre.: " + input.keys.justPressed + "\n";*/
-
     updateInputs();
 
-    time.measureDelta = time.elapsed;
+    time.ups.lastMeasuredDelta = time.ups.elapsed;
 
-    // Update fps counter (literally, count the frames in a time interval)
-    if (time.elapsed - time.measureFrame >= settings.debug.fpsUpdateInterval) {
-        // Calculate current fps
-        let currentFps = makeFinite(time._frames * (1000 / settings.debug.fpsUpdateInterval));
-
-        // Add to rolling buffer
-        time.buffer.push(currentFps);
-        if (time.buffer.length > time.bufferSize) time.buffer.unshift();
-
-        // Calculate average fps
-        time.fps = Math.round(time.buffer.reduce((a, b) => (a + b)) / time.buffer.length);
-
-        document.getElementById("fps").textContent = "FPS: " + time.fps;
-        time.measureFrame = time.elapsed;
-        time._frames = 0;
+    // Update fps counter (literally, count the frames in a fixed time interval)
+    if (time.ups.elapsed - time.ups.lastMeasured >= settings.debug.fpsUpdateInterval) {
+        _updateTime("ups");
     }
 
     // Synchronise debug settings with the debug menu
@@ -129,7 +143,35 @@ function _mainLoop() {
         }
     }
 
-    requestAnimationFrame(_mainLoop);
+    //setTimeout(_updateLoop, 10);
+    setTimeout(() => {_updateLoop()}, 1);
+    /*requestAnimationFrame((currentTime) => {
+        _updateLoop(currentTime);
+    });*/
+}
+
+async function _renderLoop(currentTime) {
+    frameCounter++;
+    time.fps.samples++;
+    time.fps.elapsed = Math.floor(currentTime);
+    time.fps.delta = time.fps.elapsed - time.fps.lastMeasuredDelta;
+
+    document.getElementById("text").textContent = "";
+
+    if (typeof(render) === typeof(Function)) await render(time.fps.delta);
+
+    document.getElementById("fps").textContent = `FPS: ${time.fps.value}\tUPS: ${time.ups.value}\n`;
+    //document.getElementById("fps").textContent += `Fd: ${time.fps.delta}\tUd: ${time.ups.delta}`;
+
+    time.fps.lastMeasuredDelta = time.fps.elapsed;
+
+    if (time.fps.elapsed - time.fps.lastMeasured >= settings.debug.fpsUpdateInterval) {
+        _updateTime("fps");
+    }
+
+    requestAnimationFrame((currentTime) => {
+        _renderLoop(currentTime);
+    });
 }
 
 // Start script when the body is loaded
@@ -146,6 +188,7 @@ async function _start() {
     // Call init function, before starting the main loop
     if (typeof(init) === typeof(Function)) await init();
 
-    // Start the main game loop
-    _mainLoop();
+    // Start the main game loops (render and update)
+    _updateLoop();
+    _renderLoop();
 }

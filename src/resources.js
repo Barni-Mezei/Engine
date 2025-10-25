@@ -352,41 +352,24 @@ class Resource {
     }
 
     /**
-     * Removes finished sounds from the parallel cache
+     * Removes leftover resources from the parallel cache
+     * like finished sounds, or disabled textures
      */
     static _cleanUpParallelCache() {
-        let i = 0;
-
-        for (i = 0; i < Object.keys(Resource._parallelCache).length; i++) {
-            let resourceId = Object.keys(Resource._parallelCache)[i];
+        for (let resourceId in Resource._parallelCache) {
             let resource = Resource._parallelCache[resourceId];
 
             // Remove finished sounds (only if instances)
             if (resource instanceof Sound && resourceId.includes("i")) {
                 if (resource.audio.currentTime == resource.audio.duration) {
                     resource.destroy();
-                    //delete Resource._parallelCache[name];
                     delete Resource._parallelCache[resourceId];
-                    i--;
                 }
-                continue;
+            }
 
-                // Detect broken time (floating point precision drops)
-                let stringTime = resource.audio.currentTime + "";
-                let stringArr = stringTime.split(".");
-
-                // Time is not broken, continue
-                if (stringArr.length < 2) continue;
-
-                let precision = stringArr[1].length;
-
-                // Time is broken, delete audio
-                if (precision < 4) {
-                    resource.destroy();
-                    delete Resource._parallelCache[resourceId];
-                    i--;
-                    continue;
-                }
+            // Remove disabled resources
+            if (resource.disabled) {
+                delete Resource._parallelCache[resourceId];
             }
         }
     }
@@ -475,6 +458,18 @@ class Texture extends BaseResource {
     /* TODO: When cropping, this is not considering the animation, which creates a differently sized area to crop.
     (with wrapping it is more complex) Solutions: do not crop if anmimated OR crop out the whole animation region OR store each frame as a separate image */
 
+    /**
+     * Create a cropped version of the provided image. If the image is animated, this function will make
+     * a long sprite sheet from the animation frames
+     * @param {ImageBitmap} image A drawable image object
+     * @param {Object} cropData The crop data of this image, in the following structure:
+     * - width: The width of the cropped region
+     * - height: The height of the cropped region
+     * - x: The X coordinate of top left corner of the region
+     * - y: The Y coordinate of top left corner of the region
+     * @param {Boolean} isAnimated Is the texture animated, or not?
+     * @returns {OffscreenCanvas} Returns with an offscreenCanvas element, which is a drawable image source
+     */
     static canvasFromImage(image, cropData = null, isAnimated = false) {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
@@ -666,11 +661,11 @@ class Texture extends BaseResource {
         if (!this.animData.playing) return;
 
         let frameInMillis = this.animData.frameLength * 1000;
-        let lastUpdateTime = time.elapsed - this.animData.lastUpdate;
+        let lastUpdateTime = time.ups.elapsed - this.animData.lastUpdate;
         
         if (lastUpdateTime < frameInMillis) return;
         
-        this.animData.lastUpdate = time.elapsed;
+        this.animData.lastUpdate = time.ups.elapsed;
         this.animData.currentFrame += this.animData.direction;
 
         // Loop back on end (if mode allows it)
@@ -710,7 +705,7 @@ class Texture extends BaseResource {
     }
 
     destroy() {
-        this.disabled = true;
+        super.destroy();
     }
 }
 
@@ -818,7 +813,7 @@ class Sound extends BaseResource {
     destroy() {
         this.audio.pause();
 
-        this.disabled = true;
+        super.destroy();
     }
 }
 

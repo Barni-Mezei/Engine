@@ -7,14 +7,12 @@
 TODO: Implement Get closest point on path method
 search 3 closest path points, and check the lines between
 them (2 lines) and return the closest point on those 2 lines
-
-Check if: removeAgent and disconnectAgent are need to be 2 separate functions
 */
 
 class Path {
     points = [];
-    agents = [];
-    finishedAgents = [];
+    agents = []; // All agents on the path (even finished ones)
+    finishedAgents = []; // Already finished agents
 
     /**
      * Creates a new path, with the given points.
@@ -25,8 +23,8 @@ class Path {
     }
 
     /**
-     * Retuns with the starting point of this path OR **null**
-     * @returns {Vector|null} The starting point OR **null**
+     * Retuns with the starting point of this path or null
+     * @returns {Vector|null} The starting point or null
      */
     get startPoint() {
         if (this.points.length == 0) return null;
@@ -34,8 +32,8 @@ class Path {
     }
 
     /**
-     * Retuns with the last point of this path OR **null**
-     * @returns {Vector|null} The last point OR **null**
+     * Retuns with the last point of this path or null
+     * @returns {Vector|null} The last point or null
      */
     get endPoint() {
         if (this.points.length == 0) return null;
@@ -44,7 +42,7 @@ class Path {
 
     /**
      * Assigns the path to the agent and stores the agent into this.agents
-     * @param {PathFollow} agent The agent who's path will be set.
+     * @param {PathFollow} agent The agent who will be connected to this path
      */
     addAgent(agent) {
         if (!(agent instanceof PathFollow)) throw Error("The agent must be an instance of 'PathFollow' !");
@@ -53,8 +51,8 @@ class Path {
     }
 
     /**
-     * Inserts a point at the **end of the path**. (After the current end point)
-     * @param {Vector} point The point to be inserted. (A coordinate)
+     * Inserts a point at the end of the path (After the current end point)
+     * @param {Vector} point The point to be inserted
      */
     addPointAtEnd(point) {
         if (!(point instanceof Vector)) throw Error("The point must be an instance of 'Vector' !");
@@ -62,8 +60,8 @@ class Path {
     }
 
     /**
-     * Inserts a point at the **start of the path**. (Before the current starting point)
-     * @param {Vector} point The point to be inserted. (A coordinate)
+     * Inserts a point at the start of the path (Before the current starting point)
+     * @param {Vector} point The point to be inserted
      */
     addPointAtStart(point) {
         if (!(point instanceof Vector)) throw Error("The point must be an instance of 'Vector' !");
@@ -71,22 +69,25 @@ class Path {
     }
 
     /**
-     * Removes the point at the **start of the path**. (Point with index 0)
+     * Removes the point at the start of the path
      */
     removePointFromStart() {
-        this.points = this.points.filter((p, index) => index != 0);
+        //this.points = this.points.filter((p, index) => index != 0);
+        this.points = this.points.slice(1, this.points.length);
     }
 
     /**
-     * Removes the point at the **end of the path**. (Point with index -1)
+     * Removes the point at the end of the path
      */
     removePointFromEnd() {
-        this.points = this.points.filter((p, index) => index != this.points.length - 1);
+        //this.points = this.points.filter((p, index) => index != this.points.length - 1);
+        this.points = this.points.slice(0, -1);
     }
 
     /**
-     * Returns with the point at the given index OR **null**
-     * @param {Number} index The point's index OR **null**
+     * Returns with the point at the given index or null
+     * @param {Number} index The point's index
+     * @returns {Number|null} The point it self or null
      */
     getPoint(index) {
         if (index < 0 || index > this.points.length-1) return null;
@@ -121,12 +122,13 @@ class Path {
     }
 
     /**
-     * Move the agent to this.finishedAgents array
-     * @param {PathFollow} agent The agent to be added
+     * Move the agent to this.finishedAgents array and removes it from this.agents
+     * @param {PathFollow} agent The agent to be moved
      */
     addToFinished(agent) {
         if (!(agent instanceof PathFollow)) throw Error("The agent must be an instance of 'PathFollow' !");
 
+        this.agents = this.agents.filter(a => a !== agent);
         this.finishedAgents.push(agent);
     }
 
@@ -141,59 +143,53 @@ class Path {
     }
 
     /**
-     * Checks if the path has any **finished agents**, that are already have been **redirected**, and **removes** them from the `finishedAgents` array.
+     * Checks if the path has any finished agents, that are already have been redirected, and **removes** them from the `finishedAgents` array.
      */
     clearFinishedAgents() {
-        this.finishedAgents = this.finishedAgents.filter(a => a.finished);
+        this.agents = this.agents.filter(a => !this.finishedAgents.includes(a));
+
+        this.finishedAgents = [];
     }
 
     /**
-     * Remove the agent from this.agents array
+     * Remove the agent from this.agents and this.finishedAgents if necessary
      * @param {PathFollow} agent The agent to be removed
      */
     removeAgent(agent) {
         if (!(agent instanceof PathFollow)) throw Error("The agent must be an instance of 'PathFollow' !");
 
-        this.agents = this.agents.filter(a => a !== agent);
-    }
-
-
-    /**
-     * Disconnects the agent from this path (removes from this.agents and nulls the agents reference to this)
-     * @param {PathFollow} agent The agent to be disconnected from this path
-     */
-    disconnectAgent(agent) {
-        if (!(agent instanceof PathFollow)) throw Error("The agent must be an instance of 'PathFollow' !");
-
-        agent.path = undefined;
+        /*agent.path = null;
+        agent.following = false;*/
+        this.finishedAgents = this.finishedAgents.filter(a => a !== agent);
         this.agents = this.agents.filter(a => a !== agent);
     }
 
     update() {
         // Update all agents
-        this.agents.forEach(a => {
+        for (let a of this.agents) {
             a.update();
-        });
+        }
     }
 
     render() {
         // Render points
-        this.points.forEach((p, index) => {
-            ctx.fillStyle = "#ffff00";
-            ctx.beginPath();
-            ctx.arc(...camera.w2cXY(p.x, p.y), camera.w2csX(10), 0, Math.PI * 2);
-            ctx.fill();
-        });
+        ctx.fillStyle = "#ffff00";
 
-        // Render path
+        for (let p of this.points) {
+            ctx.beginPath();
+            ctx.arc(...camera.w2c(p, p).toArray(), camera.w2csX(10), 0, Math.PI * 2);
+            ctx.fill();
+        };
+
+        // Render connect points
         ctx.strokeStyle = "#ffff00";
         ctx.lineWidth = camera.w2csX(5);
         ctx.beginPath();
 
-        this.points.forEach((p, index) => {
-            if (index == 0) ctx.moveTo(...camera.w2cXY(p.x, p.y));
-            else ctx.lineTo(...camera.w2cXY(p.x, p.y));
-        });
+        ctx.moveTo(...camera.w2c(this.points[0]).toArray());
+        for (let p of this.points) {
+            ctx.lineTo(...camera.w2c(p).toArray());
+        };
 
         ctx.stroke();
     }
@@ -243,7 +239,7 @@ class PathConnection {
     }
 
     /**
-     * Returns with a list of **all of the agents** in all of the input's `finishedAgents` arrays.
+     * Returns with a list of all of the agents in all of the input's `finishedAgents` arrays.
      */
     get inputBuffer() {
         let inputAgents = [];
@@ -257,7 +253,7 @@ class PathConnection {
 
     /**
      * Adds the path to this connection's inputs
-     * @param {Path} inputPath The path to be added **(Must be a `Path` instance!)**
+     * @param {Path} inputPath The path to be added
      */
     addInputPath(inputPath) {
         if (!(inputPath instanceof Path)) throw Error("The input must be an instance of 'Path' !");
@@ -266,7 +262,7 @@ class PathConnection {
 
     /**
      * Adds the path to this connection's outputs
-     * @param {Path} inputPath The path to be added **(Must be a `Path` instance!)**
+     * @param {Path} inputPath The path to be added
      */
     addOutputPath(outputPath) {
         if (!(outputPath instanceof Path)) throw Error("The output must be an instance of 'Path' !");
@@ -275,7 +271,7 @@ class PathConnection {
 
     /**
      * Removes the path from this connection's inputs
-     * @param {Path} inputPath The path to be removed **(Must be a `Path` instance!)**
+     * @param {Path} inputPath The path to be removed
      */
     removeInputPath(inputPath) {
         this.inputs = this.inputs.filter(p => p != inputPath);
@@ -285,7 +281,7 @@ class PathConnection {
 
     /**
      * Removes the path from this connection's outputs
-     * @param {Path} inputPath The path to be removed **(Must be a `Path` instance!)**
+     * @param {Path} inputPath The path to be removed
      */
     removeOutputPath(inputPath) {
         this.outputs = this.outputs.filter(p => p != inputPath);
@@ -294,7 +290,7 @@ class PathConnection {
 
     /**
      * Selectes the given path as an input
-     * @param {Path} path The path to be selected **(Must be a `Path` instance!)**
+     * @param {Path} path The path to be selected
      * @returns {Boolean} Was the operation succesful?
      */
     selectInput(path) {
@@ -321,7 +317,7 @@ class PathConnection {
 
     /**
     * Selects the given path as the current output
-    * @param {Path} path The path to be selected **(Must be a `Path` instance!)**
+    * @param {Path} path The path to be selected
     * @returns {Boolean} Was the operation succesful?
     */
     selectOutput(path) {
@@ -355,8 +351,8 @@ class PathConnection {
     }
 
     /**
-     * Selects all agents from `finishedAgents` of the input paths, using a rule determined by the `inputMode` and places them to the output paths `startPoint` using a rule determined by the `outputMode`
-     * @returns {void}
+     * Selects all agents from `finishedAgents` of the input paths, using a rule determined by the `inputMode` and places
+     * them to the output paths `startPoint` using a rule determined by the `outputMode`
      */
     update() {
         if (this.inputs.length == 0) return;
@@ -541,7 +537,7 @@ class PathFollow extends Object2D {
     speed = 5;
     color = "#00ff00";
 
-    path;
+    path = null;
     lastPointIndex = 0;
 
     following = false;
@@ -550,8 +546,8 @@ class PathFollow extends Object2D {
 
     /**
      * Creates a new path following agent
-     * @param {Number} speed The agent's speed (*pixels / update*)
-     * @param {String} color The agent's color. (for debugging)
+     * @param {Number} speed The agent's speed
+     * @param {String} color The agent's color
      */
     constructor(speed = 5, color = "#00ff00") {
         super(new Vector(), new Vector());
@@ -564,19 +560,19 @@ class PathFollow extends Object2D {
 
     /**
      * Sets the followed path. The agent will start from the newly set path's `startPoint`
-     * @param {Path} path The new path to be followed. **(Must be a `Path` instance!)**
+     * @param {Path} path The new path to be followed.
      * @param {String} startMode
      - The starting mode. Can be:
-     - **restart**: Starts the new path from the beginning
+     - **start**: Starts the new path from the beginning
      - **closest**: Starts the new path from the closest point to it self.
      */
-    setPath(path, startMode = "restart") {
+    setPath(path, startMode = "start") {
         if (!(path instanceof Path)) throw Error("The path must be an instance of 'Path' !");
 
         this.path = path;
         this.following = false;
 
-        if (startMode == "restart") this.startPath();
+        if (startMode == "start") this.startPath();
         if (startMode == "closest") {
             let closestpointOnPath = this.path.getClosestPoint(this.pos);
             if (closestpointOnPath == null) return;
@@ -588,8 +584,18 @@ class PathFollow extends Object2D {
     }
 
     /**
+     * Disconnects this agent from its path, and stops following
+     */
+    removePath() {
+        if (!this.path) return;
+
+        this.path.removeAgent(this);
+        this.path = null;
+        this.following = false;
+    }
+
+    /**
      * Sets it's position to the given path, and initialises the following state variables.
-     * @returns {void}
      */
     startPath() {
         let startingPoint = this.path.startPoint;
@@ -604,6 +610,10 @@ class PathFollow extends Object2D {
 
     update() {
         if (!this.following) return;
+        if (!this.path) {
+            this.following = false;
+            return;
+        }
 
         let jumpSuccesful = false;
         let currentSpeed = this.speed;
@@ -616,7 +626,7 @@ class PathFollow extends Object2D {
         while (!jumpSuccesful) {
             if (this.path.isLastPointIndex(this.lastPointIndex)) break;
 
-            //Moveitem
+            // Moveitem
             let nextPoint = this.path.getPoint(this.lastPointIndex + 1);
             let diffVec = nextPoint.sub(this.pos);
             let distToPoint = diffVec.length;
@@ -632,10 +642,10 @@ class PathFollow extends Object2D {
                 jumpSuccesful = true;
             }
 
-            //Advance index if point is reached or if skipped
+            // Advance index if point is reached or if skipped
             if (distToPoint <= currentSpeed || !jumpSuccesful) this.lastPointIndex += 1;
 
-            //Check if at last point if it is: Stop following
+            // Check if at last point if it is: Stop following
             if (this.path.isLastPointIndex(this.lastPointIndex) && this.canFinish) {
                 this.following = false;
                 this.finished = true;

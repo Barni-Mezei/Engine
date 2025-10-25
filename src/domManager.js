@@ -77,7 +77,7 @@ function buildDebugMenu() {
     container = document.createElement("div");
     container.id = "debug";
     container.classList.add("hidden");
-    container.innerHTML = `<pre id="fps">FPS: ---</pre><pre id="text"></pre>`;
+    container.innerHTML = `<pre id="fps">FPS: 60 UPS: 120</pre><pre id="text"></pre>`;
     document.body.appendChild(container);
 }
 

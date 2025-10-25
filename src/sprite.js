@@ -16,52 +16,10 @@ class SimpleSprite extends Object2D {
     constructor(textureId, position, size = new Vector(32), color = "#dd00dd") {
         super(position, size);
 
-        if (textureId != null) this.texture = new Texture(textureId);
+        if (textureId !== null) this.texture = new Texture(textureId);
 
         this.color = color;
     }
-
-    /**
-     * Returns with the X coordinate of the left edge of the sprite
-     */
-    /*get left() {
-        return Math.min(this.pos.x, this.pos.x + this.size.x);
-    }*/
-
-    /**
-     * Returns with the X coordinate of the right edge of the sprite
-     */
-    /*get right() {
-        return Math.max(this.pos.x, this.pos.x + this.size.x);
-    }*/
-
-    /**
-     * Returns with the Y coordinate of the top edge of the sprite
-     */
-    /*get top() {
-        return Math.min(this.pos.y, this.pos.y + this.size.y);
-    }*/
-
-    /**
-     * Returns with the Y coordinate of the bottom edge of the sprite
-     */
-    /*get bottom() {
-        return Math.max(this.pos.y, this.pos.y + this.size.y);
-    }*/
-
-    /**
-     * Returns with the coordinates of the center of the sprite
-     */
-    /*get center() {
-        return this.pos.add(this.size.mult(0.5));
-    }*/
-
-    /**
-     * Returns with the offset to the cneter from the top left of the sprite
-     */
-    /*get centerOffset() {
-        return this.size.mult(0.5);
-    }*/
 
     renderColor() {
         // Black background
@@ -85,6 +43,12 @@ class SimpleSprite extends Object2D {
 
     render() {
         camera.renderTexture(this.texture, this.pos.x, this.pos.y, this.size.x, this.size.y);
+    }
+
+    destroy() {
+        this.texture.destroy();
+
+        super.destroy();
     }
 }
 
@@ -250,6 +214,8 @@ class AnimatedSprite extends Sprite {
         this.animations = animations;
         this.defaultAnimation = Object.keys(this.animations)[0];
         this.currentAnimation = this.defaultAnimation;
+
+        this.texture = animations[this.currentAnimation];
     }
 
     /**
@@ -306,5 +272,14 @@ class AnimatedSprite extends Sprite {
 
     update() {
         this.texture = this.animations[this.currentAnimation];
+    }
+
+    destroy() {
+        // Remove all texture resources
+        for (let animName in this.animations) {
+            this.animations[animName].destroy();
+        }
+
+        super.destroy();
     }
 }
