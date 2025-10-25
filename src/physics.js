@@ -140,7 +140,7 @@ class ColliderAABB extends Collider {
 
     render() {
         ctx.strokeStyle = "hsla(189, 88%, 34%, 0.75)";
-        ctx.fillStyle = "hsla(189, 88%, 32%, 0.50)";
+        ctx.fillStyle = "hsla(189, 88%, 32%, 0.5)";
         ctx.lineWidth = camera.w2csX(2);
         ctx.lineJoin = "box";
 
@@ -236,7 +236,7 @@ class ColliderCircle extends Collider {
 
     render() {
         ctx.strokeStyle = "hsla(189, 88%, 34%, 0.75)";
-        ctx.fillStyle = "hsla(189, 88%, 32%, 0.50)";
+        ctx.fillStyle = "hsla(189, 88%, 32%, 0.5)";
         ctx.lineWidth = camera.w2csX(2);
         ctx.lineJoin = "round";
 

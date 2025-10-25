@@ -16,13 +16,15 @@ let currentLayerIndex = 0;
 let soldiers = [];
 
 class Soldier extends AnimatedSprite {
-    //static ID = 0;
+    static ID = 0;
 
     agent;
 
     collider;
 
     name;
+
+    shadow;
 
     constructor(pathFollow, color) {
         let animations = {
@@ -38,10 +40,12 @@ class Soldier extends AnimatedSprite {
 
         this.agent = pathFollow;
 
-        this.name = new Label2D(`Soldier ${1}`); //++Soldier.ID
+        this.name = new Label2D(`Soldier ${++Soldier.ID}`);
         this.name.setSize(16);
 
         this.collider = new ColliderAABB(this.pos, new Vector(50,75), new Vector(25, 25));
+
+        this.shadow = new Texture("shadow");
 
         this.play("walk");
 
@@ -63,10 +67,12 @@ class Soldier extends AnimatedSprite {
             return;
         }
 
+        this.agent.speed = time.ups.delta * 0.1;
         this.agent.update();
     }
 
     render() {
+        camera.renderTexture(this.shadow, this.pos.x + (100/32)*0.5, this.pos.y + (100/32)*2, this.width, this.height);
         super.render();
 
         if (settings.debug?.boxes) {
@@ -76,6 +82,7 @@ class Soldier extends AnimatedSprite {
             ctx.beginPath();
             ctx.arc(...camera.w2c(this.pos.add(this.origin)).toArray(), camera.w2csX(4), 0, Math.PI*2);
             ctx.fill();
+
         }
 
         if (this.collider.isColliding(camera.c2w(input.mouse.pos))) {
@@ -86,6 +93,8 @@ class Soldier extends AnimatedSprite {
     destroy() {
         this.agent.removePath();
         this.agent = null;
+
+        this.shadow.destroy();
 
         super.destroy();
     }
@@ -228,13 +237,11 @@ function update(delta) {
 
     // Other controls
     if (isKeyJustPressed("space")) {
-        for (let i = 0; i < 500; i++) {
-            let newAgent = new PathFollow(2);
-            newAgent.setPath(tilemap.layers.navigation_0.objects[0]);
-    
-            let newSoldier = new Soldier(newAgent, "#ff0000");
-            soldiers.push(newSoldier);
-        }
+        let newAgent = new PathFollow();
+        newAgent.setPath(tilemap.layers.navigation_0.objects[0]);
+
+        let newSoldier = new Soldier(newAgent, "#ff0000");
+        soldiers.push(newSoldier);
     }
 
     for (let s of soldiers) {
@@ -257,6 +264,8 @@ function update(delta) {
         let newSoldier = new Soldier(newAgent, "#ff0000");
         soldiers.push(newSoldier);
     }*/
+
+    tilemap.update();
 }
 
 function render(delta) {
@@ -268,7 +277,10 @@ function render(delta) {
         tilemap.render();
     }
 
-    for (let soldier of soldiers) {
+    let tmp = [...soldiers];
+    tmp.sort((a, b) => (a.pos.y > b.pos.y) | (a.pos.x > b.pos.x));
+
+    for (let soldier of tmp) {
         soldier.render();
     }
 
@@ -285,26 +297,31 @@ function render(delta) {
     ctx.rect(...camera.w2cf(cursorPos, tilemap.tileSize));
     ctx.stroke()
 
+    let width = 100;
+    let margin = 2;
+
     // Current tile display
     ctx.beginPath();
     ctx.fillStyle = "#000";
-    ctx.fillRect(c.width - 52, 0, 52, 52*2);
+    ctx.fillRect(c.width - width - margin, 0, width + margin, 52*2);
 
     ctx.drawImage(
-        tilemap.getTileById(currentTile).texture,
-        c.width - 50, 0, 50, 50
+        tilemap.getTileById(currentTile).texture.image,
+        c.width - width, 0, width, 50
     );
+
+    //camera.renderTexture(tilemap.getTileById(currentTile).texture, c.width - 50, 0, 50, 50);
 
     ctx.fillStyle = `rgba(255, 0, 0, ${navStrength})`;
     ctx.fillRect(
-        c.width - 50, 53, 50, 50
+        c.width - width, 50 + margin, width, 50
     );
 
     document.getElementById("text").innerText += `${tilePos.x}, ${tilePos.y}: ${tilemap.getTileAt(0, tilePos)}` + "\n";
     document.getElementById("text").innerText += `Current layer [${currentLayerIndex}]: ${allLayers[currentLayerIndex]}` + "\n";
     document.getElementById("text").innerText += `Current tile [${currentTileIndex}]: ${currentTile}` + "\n";
     document.getElementById("text").innerText += `Soldiers: ${soldiers.length}` + "\n";
-    //document.getElementById("text").innerText += `PathFollow: ${tilemap.layers.navigation_0.objects[0].agents.length}` + "\n";
+    document.getElementById("text").innerText += `PathFollow: ${tilemap.layers.navigation_0.objects[0].agents.length}` + "\n";
     document.getElementById("text").innerText += `U Delta: ${time.ups.delta}` + "\n";
     document.getElementById("text").innerText += `F Delta: ${time.fps.delta}` + "\n";
     document.getElementById("text").innerText += `Cache size: ${Object.keys(Resource._parallelCache).length}` + "\n";

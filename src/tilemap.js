@@ -592,8 +592,16 @@ class Tile {
         this.atlasPos = atlasPos;
 
         this.meta = {};
-        this.pattern = ctx.createPattern(texture, "repeat");
-        this.char = null;
+
+        this.updatePattern();
+    }
+
+    updatePattern() {
+        this.pattern = ctx.createPattern(this.texture.image, "repeat");
+    }
+
+    setAutotile(array) {
+        this.autotile = array;
     }
 
     toObject() {
@@ -603,20 +611,8 @@ class Tile {
         }
     }
 
-    constructor(texture, tileId, atlasPos) {
-        super(texture, tileId, atlasPos);
-
-        delete this.char;
-
-        this.updatePattern();
-    }
-
-    updatePattern() {
-        this.pattern = ctx.createPattern(this.texture, "repeat");
-    }
-
-    setAutotile(array) {
-        this.autotile = array;
+    update() {
+        this.texture.update();
     }
 }
 
@@ -738,7 +734,7 @@ class TileMap extends Object2D {
         this.#height = height;
 
         this.atlasId = atlasTextureId;
-        this.atlasTexture = new Texture(atlasTextureId);
+        this.atlasTexture = new Texture(atlasTextureId, null);
 
         this.atlasData = {
             rows: null, // Auto complete if tile width is present
@@ -750,8 +746,13 @@ class TileMap extends Object2D {
         }
 
         this._setAtlasData(atlasData);
-        
-        this.#tiles = SimpleTileMap.sliceTiles(this.atlasTexture, this.atlasData);
+
+        if (this.atlasTexture.isAnimated) {
+            this.atlasTexture.animData.gapX = (this.atlasData.columns - 1) * this.atlasData.tileWidth;
+            this.atlasTexture.animData.gapY = (this.atlasData.rows - 1) * this.atlasData.tileHeight;
+        }
+
+        this.#tiles = TileMap.sliceTiles(this.atlasTexture, this.atlasData);
 
         this.#layers = {};
         this.addLayer("graphics");
@@ -759,7 +760,7 @@ class TileMap extends Object2D {
         this.addLayer("navigation");
 
         this._updateSize();
-        this._updateTilePatterns();
+        //this._updateTilePatterns();
     }
 
     /**
@@ -772,10 +773,13 @@ class TileMap extends Object2D {
             this.atlasData[key] = atlasData[key];
         }
 
+        let imageWidth = this.atlasTexture?.cropData.width ?? this.atlasTexture.image.width;
+        let imageHeight = this.atlasTexture?.cropData.height ?? this.atlasTexture.image.height;
+
         // Complete atlas size
         if (!this.atlasData.rows) {
-            this.atlasData.rows = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
-            this.atlasData.columns = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
+            this.atlasData.rows = (imageHeight + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
+            this.atlasData.columns = (imageWidth + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
         }
 
         // Complete tile size
@@ -835,14 +839,27 @@ class TileMap extends Object2D {
         for (let y = 0; y < atlasData.rows; y++) {
             for (let x = 0; x < atlasData.columns; x++) {
                 let tileId = SimpleTileMap._getTileIdFromCoords(x, y);
-                let tileImage = Texture.canvasFromImage(image, {
+                let tileImage = Texture.canvasFromImage(texture.image, {
                     width: atlasData.tileWidth,
                     height: atlasData.tileHeight,
                     x: atlasData.tileWidth * x + Math.min(0, atlasData.gapX * (x - 1)),
                     y: atlasData.tileHeight * y + Math.min(0, atlasData.gapY * (y - 1)),
-                }, false);
+                }, texture.animData);
 
-                let tileTexture = new Texture(texture.id, null);
+                let tileTexture = new Texture(texture.resourceId, null);
+                tileTexture.image = tileImage;
+
+                if (texture.isAnimated) {
+                    tileTexture.cropData = {
+                        x: 0,
+                        y: 0,
+                        width: atlasData.tileWidth,
+                        height: atlasData.tileHeight
+                    }
+                    
+                    tileTexture.animData.wrap = 0;
+                    tileTexture.animData.direction = 1;
+                }
 
                 tiles[tileId] = new Tile(tileTexture, tileId, new Vector(x, y));
             }
@@ -1123,14 +1140,14 @@ class TileMap extends Object2D {
      * @param {String} newTileId The new ID of this tile in the tileset
      */
     renameTile(tileId, newTileId) {
-        if (!(tileId in this.tiles)) return;
+        if (!(tileId in this.#tiles)) return;
 
         // Add new tile
-        this.tiles[newTileId] = this.tiles[tileId];
-        this.tiles[newTileId].id = newTileId;
+        this.#tiles[newTileId] = this.#tiles[tileId];
+        this.#tiles[newTileId].id = newTileId;
 
         // Remove old tile
-        delete this.tiles[tileId];
+        delete this.#tiles[tileId];
     }
 
     /**
@@ -1373,6 +1390,15 @@ class TileMap extends Object2D {
     _updateNavigation(navLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes nav layers */
 
     /**
+     * Updates the tile animations
+     */
+    update() {
+        for (let tileId in this.#tiles) {
+            this.#tiles[tileId].update();
+        }
+    }
+
+    /**
      * Renders all tiles on the tilemap on to the main canvas
      * @param {String} gridColor A color to draw the grid lines with (if null, no gridlines wil be drawn)
      * @param {Number} gridThickness The thickness of the gridlines (in pixels)
@@ -1402,10 +1428,12 @@ class TileMap extends Object2D {
 
                 ctx.imageSmoothingEnabled = !c.isPixelPerfect;
 
-                ctx.drawImage(
+                /*ctx.drawImage(
                     self.getTileById(tile.id).texture,
                     ...camera.w2c(tilePos).toArray(), ...camera.w2cs(self.tileSize).toArray()
-                );
+                );*/
+
+                camera.renderTexture(self.getTileById(tile.id).texture, ...tilePos.toArray(), self.tileWidth, self.tileHeight)
             });
         }
 
@@ -1479,6 +1507,4 @@ class TileMap extends Object2D {
             }
         }
     }
-
-    update() {}
 }

@@ -88,13 +88,15 @@ function _updateTime(timeUnit) {
 
     // Add to rolling buffer
     time[timeUnit].buffer.push(currentValue);
-    if (time[timeUnit].buffer.length > time[timeUnit].bufferSize) time[timeUnit].buffer.unshift();
+    if (time[timeUnit].buffer.length > time[timeUnit].bufferSize) {
+        time[timeUnit].buffer.shift();
+    }
 
-        // Calculate average fps
-        time[timeUnit].value = Math.round(time[timeUnit].buffer.reduce((a, b) => (a + b)) / time[timeUnit].buffer.length);
+    // Calculate average fps
+    time[timeUnit].value = Math.round(time[timeUnit].buffer.reduce((a, b) => (a + b)) / time[timeUnit].buffer.length);
 
-        time[timeUnit].lastMeasured = time[timeUnit].elapsed;
-        time[timeUnit].samples = 0;
+    time[timeUnit].lastMeasured = time[timeUnit].elapsed;
+    time[timeUnit].samples = 0;
 }
 
 async function _updateLoop() {

@@ -80,7 +80,7 @@ class Resource {
     /**
      * Generates a unique id from the id of the current resource
      * @param {String} resourceId The id of a resource
-     * @returns {String} A unique id
+     * @returns {String} A unique resource id
      */
     static generateResourceUID(resourceId) {
         Resource._globalResourceId += 1;
@@ -92,8 +92,19 @@ class Resource {
      * Schedules a texture for loading, with a unique name
      * @param {String} path The path to the image
      * @param {String} name The name of the resource (MUST BE UNIQUE!)
-     * @param {Array} cropData x,y, width,height
-     * @param {Array} animData number of frames, frame length (in seconds), mode?, wrap? (0 for disabling), direction?
+     * @param {Array} cropData Crop data for the texture, in the following format (array):
+     * - x
+     * - y
+     * - width
+     * - height
+     * @param {Array} animData Animation data for the texture, in the following format (array):
+     * - number of frames
+     * - frame length (in seconds)
+     * - mode (optional) ["loop", "pingpong", "stop", "reset"]
+     * - wrap (optional) (0 for disabling) Number of cells in a row, before wrapping to the next one
+     * - direction (optional) -1 to playback in reverse
+     * - gapX (optional) Gap between frames on the X axis
+     * - gapY (optional) Gap between frames on the Y axis
      */
     static loadTexture(path, name, cropData, animData) {
         Resource.maxLoadables++;
@@ -122,6 +133,8 @@ class Resource {
                 mode: animData[2] ?? "loop", // mode (default to: "loop")
                 wrap: animData[3] ?? 0, // wrap (default to: 0)
                 direction: animData[4] ?? 1,
+                gapX: animData[5] ?? 0,
+                gapY: animData[6] ?? 0,
                 currentFrame: 0,
                 lastUpdate: 0,
                 playing: true,
@@ -134,34 +147,12 @@ class Resource {
     }
 
     /**
-     * The tilemap uses side and corner mathcing, default tile is the first one
-     * @param {String} texture_path The path to the image
-     * @param {String} bitmap_path The path to the bitmap image (1 tile = 3*3px, middle is ignored)
-     * @param {String} name The name of the resource (MUST BE UNIQUE!)
-     * @param {Array} mapData width, height, tile width, tile height
-     */
-    static loadTileMap(texture_path, bitmap_path, name, mapData = [1,1, 16,16]) {
-        console.log("Settings:", settings);
-        let bitmapName = `${name}_bitmap`;
-
-        Resource.loadTexture(bitmap_path, bitmapName);
-        Resource.loadTexture(texture_path, name);
-
-        Resource.textures[name].mapData = {
-            width: mapData[0],
-            height: mapData[1],
-            tileWidth: mapData[2],
-            tileHeight: mapData[3],
-            bitmapName: bitmapName,
-            tiles: [],
-        }
-    }
-
-    /**
      * Schedules a sound for loading, with a unique name
      * @param {String} path The path to the audio file
      * @param {String} name The name of the resource (MUST BE UNIQUE!)
-     * @param {Array} playData volume(0-100)?, loop count?
+     * @param {Array} playData Playback data for the sound, in the following format:
+     * - volume (optional) From 0 to 100
+     * - loop count (optional)
      */
     static loadSound(path, name, playData) {
         Resource.maxLoadables++;
@@ -448,9 +439,13 @@ class Texture extends BaseResource {
         if ("cropData" in textureData) this.cropData = structuredClone(textureData.cropData);
         if ("animData" in textureData) this.animData = structuredClone(textureData.animData);
 
-        this.image = Texture.canvasFromImage(textureData.image, this.cropData, this.isAnimated);
+        this.image = Texture.canvasFromImage(textureData.image, this.cropData, this.animData);
 
-        if (!this.isAnimated) this.cropData = null;
+        if (this.isAnimated) {
+            this.animData.wrap = 0;
+        } else {
+            this.cropData = null;
+        }
 
         if (continer != null) continer[this.uid] = this;
     }
@@ -467,37 +462,58 @@ class Texture extends BaseResource {
      * - height: The height of the cropped region
      * - x: The X coordinate of top left corner of the region
      * - y: The Y coordinate of top left corner of the region
-     * @param {Boolean} isAnimated Is the texture animated, or not?
+     * @param {Object} animData A valid texture animation data object
      * @returns {OffscreenCanvas} Returns with an offscreenCanvas element, which is a drawable image source
      */
-    static canvasFromImage(image, cropData = null, isAnimated = false) {
+    static canvasFromImage(image, cropData = null, animData = {}) {
         let imageWidth = cropData?.width ?? image.width;
         let imageHeight = cropData?.height ?? image.height;
 
         let imageOffsetX = cropData?.x ?? 0;
         let imageOffsetY = cropData?.y ?? 0;
 
-        if (isAnimated) {
-            return image;
+        if ("currentFrame" in animData) {
+            let offCanvas = new OffscreenCanvas(animData.length * imageWidth, imageHeight);
+            let offCtx = offCanvas.getContext("2d");
+    
+            offCtx.imageSmoothingEnabled = false;
+            offCtx.imageSmoothingQuality = "low";
+
+            for (let frame = 0; frame < animData.length; frame++) {
+                let newOffX = imageOffsetX;
+                let newOffY = imageOffsetY;
+                if (animData.wrap == 0) {
+                    newOffX += frame * cropData.width + frame * animData.gapX;
+                } else {
+                    let wrapX = (frame % animData.wrap);
+                    let wrapY = Math.floor(frame / animData.wrap);
+                    newOffX += wrapX * cropData.width  + wrapX * animData.gapX;
+                    newOffY += wrapY * cropData.height + wrapY * animData.gapY;
+                }
+
+                offCtx.drawImage(
+                    image,
+                    newOffX, newOffY, imageWidth, imageHeight,
+                    frame * imageWidth, 0, imageWidth, imageHeight
+                );
+            }
+
+            return offCanvas;
+        } else {
+            let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
+            let offCtx = offCanvas.getContext("2d");
+    
+            offCtx.imageSmoothingEnabled = false;
+            offCtx.imageSmoothingQuality = "low";
+    
+            offCtx.drawImage(
+                image,
+                imageOffsetX, imageOffsetY, imageWidth, imageHeight,
+                0, 0, imageWidth, imageHeight
+            );
+    
+            return offCanvas;
         }
-
-        let offCanvas = new OffscreenCanvas(imageWidth, imageHeight);
-        //let offCanvas = document.createElement("canvas"); 
-        let offCtx = offCanvas.getContext("2d");
-
-        /*offCanvas.width = imageWidth;
-        offCanvas.height = imageHeight;*/
-
-        offCtx.imageSmoothingEnabled = false;
-        offCtx.imageSmoothingQuality = "low";
-
-        offCtx.drawImage(
-            image,
-            imageOffsetX, imageOffsetY, imageWidth, imageHeight,
-            0, 0, imageWidth, imageHeight
-        );
-
-        return offCanvas;
     }
 
     /**
@@ -562,10 +578,12 @@ class Texture extends BaseResource {
 
             // Apply frame wrapping, only if enabled
             if (this.animData.wrap == 0) {
-                cropData.x += this.animData.currentFrame * cropData.width;
+                cropData.x += this.animData.currentFrame * cropData.width + ((this.animData.currentFrame - 1) * this.animData.gapX);
             } else {
-                cropData.x += (this.animData.currentFrame % this.animData.wrap) * cropData.width;
-                cropData.y += Math.floor(this.animData.currentFrame / this.animData.wrap) * cropData.height;
+                let wrapX = (this.animData.currentFrame % this.animData.wrap);
+                let wrapY = Math.floor(this.animData.currentFrame / this.animData.wrap);
+                cropData.x += wrapX * cropData.width  + ((wrapX - 1) * this.animData.gapX);
+                cropData.y +=  wrapY * cropData.height + ((wrapY - 1) * this.animData.gapY);
             }
 
             this.#drawImageRotated(x,y, [cropData.x,cropData.y, cropData.width,cropData.height], width,height, rotation, margin);

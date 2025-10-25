@@ -26,7 +26,8 @@ addDebugOption("boxes", "Show boxes", "bool", false);
 
 setDebugMenu(true);
 
-Resource.loadTexture("../res/small_tiles.png", "terrain", [0,0, 64,64], [2, 0.25]);
+//Resource.loadTexture("../res/small_tiles_animated.png", "terrain", [0,0, 64,64]);
+Resource.loadTexture("../res/small_tiles_animated.png", "terrain", [0,0, 64,64], [4, 0.25, "loop", 2, 1]);
 Resource.loadFile("./test.json", "terrain_test");
 Resource.loadFile("./map01.json", "tiled_tilemap");
 Resource.loadFile("./map01.json", "tiled_tileset");
@@ -34,5 +35,6 @@ Resource.loadFile("./map01.json", "tiled_tileset");
 Resource.loadTexture("../res/characters.png", "soldier_idle", [0, 0, 32, 32]);
 Resource.loadTexture("../res/characters.png", "soldier_walk", [0, 0, 32, 32], [4, 0.15]);
 Resource.loadTexture("../res/characters.png", "soldier_jump", [32, 0, 32, 32], [4, 0.15]);
+Resource.loadTexture("../res/shadow.png", "shadow", [0, 0, 32, 32], [2, 0.15]);
 
 Resource.startLoading();
