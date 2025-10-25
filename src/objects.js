@@ -1,5 +1,5 @@
 /**
- * Dependencies: vector
+ * Dependencies: vector 
  */
 
 class BaseResource {
@@ -8,13 +8,22 @@ class BaseResource {
 
     disabled = false;
 
+    /**
+     * @param {String} resourceId The name of this resource, to generate a UID from
+     */
     constructor(resourceId) {
         this.resourceId = resourceId;
         this.uid = Resource.generateResourceUID(resourceId);
     }
 
+    /**
+     * @abstract
+     */
     update() {}
 
+    /**
+     * @abstract
+     */
     render() {}
 
     destroy() {
@@ -28,6 +37,10 @@ class Object2D {
 
     disabled = false;
 
+    /**
+     * @param {Vector} position The origin of this object
+     * @param {Vector} size Width and height of the object's bounding box
+     */
     constructor(position = new Vector(0, 0), size = new Vector(1, 1)) {
         this.pos = position;
         this.size = size;
@@ -83,8 +96,14 @@ class Object2D {
         return this.size.mult(0.5);
     }
 
+    /**
+     * @abstract
+     */
     update() {}
 
+    /**
+     * @abstract
+     */
     render() {}
 
     destroy() {
@@ -95,18 +114,27 @@ class Object2D {
 class PhysicsObject2D extends Object2D {
     vel = new Vector();
 
-    constructor(position, size) {
+    /**
+     * @param {Vector} position The origin of this object
+     * @param {Vector} size Width and height of the object's bounding box
+     * @param {Vector} velocity The starting velocity of this object
+     */
+    constructor(position, size, velocity = new Vector(0, 0)) {
         super(position, size);
 
-        this.vel = new Vector(0, 0);
+        this.vel = velocity;
     }
 
     update() {
         this.pos = this.pos.add(this.vel);
 
+        // Basic friction implementation
         this.vel = this.vel.mult(0.99);
     }
 
+    /**
+     * @abstract
+     */
     render() {}
 
     destroy() {

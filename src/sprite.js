@@ -1,5 +1,5 @@
 /**
- * Dependencies: objects, vector, resourceManager
+ * Dependencies: objects, vector, resources
  */
 
 class SimpleSprite extends Object2D {
@@ -24,50 +24,46 @@ class SimpleSprite extends Object2D {
     /**
      * Returns with the X coordinate of the left edge of the sprite
      */
-    get left() {
+    /*get left() {
         return Math.min(this.pos.x, this.pos.x + this.size.x);
-    }
+    }*/
 
     /**
      * Returns with the X coordinate of the right edge of the sprite
      */
-    get right() {
+    /*get right() {
         return Math.max(this.pos.x, this.pos.x + this.size.x);
-    }
+    }*/
 
     /**
      * Returns with the Y coordinate of the top edge of the sprite
      */
-    get top() {
+    /*get top() {
         return Math.min(this.pos.y, this.pos.y + this.size.y);
-    }
+    }*/
 
     /**
      * Returns with the Y coordinate of the bottom edge of the sprite
      */
-    get bottom() {
+    /*get bottom() {
         return Math.max(this.pos.y, this.pos.y + this.size.y);
-    }
+    }*/
 
     /**
      * Returns with the coordinates of the center of the sprite
      */
-    get center() {
+    /*get center() {
         return this.pos.add(this.size.mult(0.5));
-    }
+    }*/
 
     /**
      * Returns with the offset to the cneter from the top left of the sprite
      */
-    get centerOffset() {
+    /*get centerOffset() {
         return this.size.mult(0.5);
-    }
+    }*/
 
     renderColor() {
-        ctx.save();
-        ctx.translate(-this.center.x, -this.center.y);
-        ctx.rotate(this.rotation);
-
         // Black background
         ctx.fillStyle = "#000000";
         ctx.beginPath();
@@ -85,12 +81,10 @@ class SimpleSprite extends Object2D {
         ctx.lineTo(...camera.w2cXY(this.center.x, this.top));
         ctx.closePath();
         ctx.fill();
-
-        ctx.restore();
     }
 
     render() {
-        camera.render(this.texture, this.pos.x, this.pos.y, this.size.x, this.size.y);
+        camera.renderTexture(this.texture, this.pos.x, this.pos.y, this.size.x, this.size.y);
     }
 }
 
@@ -109,8 +103,8 @@ class Sprite extends SimpleSprite {
     constructor(textureId, position, size = new Vector(32), color = "#dd00dd") {
         super(textureId, position, size, color);
 
-        this.scale = new Vector(1);
-        this.origin = new Vector();
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
     }
 
     /**
