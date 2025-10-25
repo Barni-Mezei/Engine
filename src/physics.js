@@ -8,11 +8,27 @@
  */
 class Collider extends PhysicsObject2D {
     /**
+     * Offset from the parent object
+     */
+    offset = new Vector();
+
+    /**
      * @param {Vector} position The origin of this shape
      * @param {Vector} size Width and height of the shape's bounding box
+     * @param {Vector} offset The offset of the shape, from its parent
      */
-    constructor(position, size) {
+    constructor(position, size, offset = new Vector()) {
         super(position, size);
+
+        this.offset = offset;
+    }
+
+    /**
+     * Sets the colliders position, with the applied offset
+     * @param {Vector} position The position to set the collider to
+     */
+    setPos(position) {
+        this.pos = position.add(this.offset);
     }
 
     /**
@@ -51,9 +67,10 @@ class ColliderAABB extends Collider {
     /**
      * @param {Vector} position The origin of this shape
      * @param {Vector} size Width and height of the shape's bounding box
+     * @param {Vector} offset The offset of the shape, from its parent
      */
-    constructor(position, size) {
-        super(position, size);
+    constructor(position, size, offset) {
+        super(position, size, offset);
     }
 
     /**
@@ -168,10 +185,11 @@ class ColliderCircle extends Collider {
 
     /**
      * @param {Vector} position The origin of this shape (center of the circle)
-     * @param {Vector} radius The radius of the circle
+     * @param {Number} radius The radius of the circle
+     * @param {Vector} offset The offset of the shape, from its parent
      */
-    constructor(position, radius) {
-        super(position, new Vector(radius * 2));
+    constructor(position, radius, offset) {
+        super(position, new Vector(radius * 2), offset);
 
         this.#rad = radius;
     }

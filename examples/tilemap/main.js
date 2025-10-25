@@ -25,7 +25,6 @@ class Soldier extends AnimatedSprite {
     cooldown = 0;
     tagetPos = new Vector();
 
-
     constructor(pathFollow, color) {
         let animations = {
             "idle": new Texture("soldier_idle"),
@@ -43,14 +42,14 @@ class Soldier extends AnimatedSprite {
         this.name = new Label2D(`Soldier ${soldiers.length}`);
         this.name.setSize(16);
 
-        this.collider = new ColliderAABB(this.pos, this.size);
+        this.collider = new ColliderAABB(this.pos, new Vector(50,75), new Vector(25, 25));
     }
 
     update() {
         super.update();
 
         this.pos = this.agent.pos;
-        this.collider.pos = this.pos;
+        this.collider.setPos(this.pos);
 
         this.name.setCenter( this.pos.add(new Vector(this.centerOffset.x, 0)) );
         this.name.pos.y += 20;
@@ -72,9 +71,14 @@ class Soldier extends AnimatedSprite {
     render() {
         if (settings.debug?.boxes) {
             this.collider.render();
+
+            ctx.fillStyle = "#ff0000";
+            ctx.beginPath();
+            ctx.arc(...camera.w2c(this.pos.add(this.origin)).toArray(), camera.w2csX(4), 0, Math.PI*2);
+            ctx.fill();
         }
 
-        if (this.collider.isColliding(mouse.pos)) {
+        if (this.collider.isColliding(camera.c2w(input.mouse.pos))) {
             this.name.render();
         }
 
@@ -112,8 +116,6 @@ async function init() {
     tilemap.clear("navigation_0", 0);*/
 
     editorPos = tilemap.center;
-
-    //camera.settings.rounded = true;
 }
 
 function update() {
@@ -239,7 +241,7 @@ function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
     if (settings.debug.grid) {
-        tilemap.render("#444", camera.w2csX(0.5));
+        tilemap.render("#444", camera.w2csX(0.5), settings.debug.collision, settings.debug.navigation);
     } else {
         tilemap.render();
     }

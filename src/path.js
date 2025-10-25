@@ -1,5 +1,5 @@
 /**
- * Dependencies: vector
+ * Dependencies: objects, vector, camera
  */
 
 /*
@@ -7,6 +7,8 @@
 TODO: Implement Get closest point on path method
 search 3 closest path points, and check the lines between
 them (2 lines) and return the closest point on those 2 lines
+
+Check if: removeAgent and disconnectAgent are need to be 2 separate functions
 */
 
 class Path {
@@ -175,17 +177,17 @@ class Path {
     }
 
     render() {
-        //Render points
+        // Render points
         this.points.forEach((p, index) => {
             ctx.fillStyle = "#ffff00";
             ctx.beginPath();
-            ctx.arc(...camera.w2cXY(p.x, p.y), camera.c2wsX(15), 0, Math.PI * 2);
+            ctx.arc(...camera.w2cXY(p.x, p.y), camera.w2csX(10), 0, Math.PI * 2);
             ctx.fill();
         });
 
-        //Render path
+        // Render path
         ctx.strokeStyle = "#ffff00";
-        ctx.lineWidth = camera.c2wsX(10);
+        ctx.lineWidth = camera.w2csX(5);
         ctx.beginPath();
 
         this.points.forEach((p, index) => {
@@ -535,8 +537,7 @@ class PathConnection {
     }
 }
 
-class PathFollow {
-    pos = new Vector();
+class PathFollow extends Object2D {
     speed = 5;
     color = "#00ff00";
 
@@ -545,7 +546,6 @@ class PathFollow {
 
     following = false;
     finished = false;
-    disabled = false;
     canFinish = true;
 
     /**
@@ -554,7 +554,8 @@ class PathFollow {
      * @param {String} color The agent's color. (for debugging)
      */
     constructor(speed = 5, color = "#00ff00") {
-        this.pos = new Vector(0, 0);
+        super(new Vector(), new Vector());
+
         this.speed = speed;
         this.color = color;
         this.following = false;
@@ -648,7 +649,7 @@ class PathFollow {
     render() {
         ctx.fillStyle = this.following ? this.color : "#ff000088";
         ctx.beginPath();
-        ctx.arc(this.pos.x, this.pos.y, this.following ? 20 : 3, 0, Math.PI * 2);
+        ctx.arc(...camera.w2cXY(this.pos.x, this.pos.y), camera.w2csX(this.following ? 20 : 3), 0, Math.PI * 2);
         ctx.fill();
     }
 }
