@@ -345,6 +345,10 @@ class Resource {
         for (let name in Resource.sounds) {
             Resource.sounds[name].audio.onload = Resource.onSoundLoad(name);
         }
+
+        if (Resource.maxLoadables == 0) {
+            Resource._loadingDone();
+        }
     }
 
     /**

@@ -81,7 +81,7 @@ class Label2D extends Object2D {
 }
 
 class Point extends Object2D {
-    color = "#00dddff";
+    color = "#00ddff";
 
     constructor(x, y, color = "#00ddff") {
         super(new Vector(x, y), new Vector(1));

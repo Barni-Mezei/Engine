@@ -381,6 +381,7 @@ class Camera {
     /**
      * Translates the camera space vector to a world space vector
      * @param {Vector} v The vector to be trasformed
+     * @returns {Vector} A world space coordinate
      */
     camToWorld(v) {
         return v.add(this.#realPos.mult(this.#realZoom)).mult(1 / this.#realZoom);

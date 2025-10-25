@@ -38,20 +38,17 @@ class Object2D {
     disabled = false;
 
     /**
-     * @param {Vector} position The origin of this object
-     * @param {Vector} size Width and height of the object's bounding box
+     * Returns the width of this object
      */
-    constructor(position = new Vector(0, 0), size = new Vector(1, 1)) {
-        this.pos = position;
-        this.size = size;
+    get width() {
+        return this.size.x;
     }
 
     /**
-     * Sets the position of the object in a way, so the center is at the specified coordinate
-     * @param {Vector} position The coordinate of the objects center
+     * Returns the height of this object
      */
-    setCenter(position) {
-        this.pos = position.sub(this.centerOffset);
+    get height() {
+        return this.size.y;
     }
 
     /**
@@ -94,6 +91,23 @@ class Object2D {
      */
     get centerOffset() {
         return this.size.mult(0.5);
+    }
+
+    /**
+     * @param {Vector} position The origin of this object
+     * @param {Vector} size Width and height of the object's bounding box
+     */
+    constructor(position = new Vector(0, 0), size = new Vector(1, 1)) {
+        this.pos = position;
+        this.size = size;
+    }
+
+    /**
+     * Sets the position of the object in a way, so the center is at the specified coordinate
+     * @param {Vector} position The coordinate of the objects center
+     */
+    setCenter(position) {
+        this.pos = position.sub(this.centerOffset);
     }
 
     /**
