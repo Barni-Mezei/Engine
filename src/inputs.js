@@ -1,5 +1,5 @@
 /**
- * Dependencies: camera
+ * Dependencies: main, vector, camera
  */
 
 
@@ -27,25 +27,58 @@ Searching: "Control+f, F3" (And connections are evaluated first)
 
 let input = {
     mouse: {
+        /**
+         * X coordinate of the cursor (relative to the window)
+         */
         x: 0,
+        /**
+         * Y coordinate of the cursor (relative to the window)
+         */
         y: 0,
 
+        /**
+         * Position of the cursor as a vector (relative to the window)
+         * @type {Vector}
+         */
+        pos: new Vector(),
+
+        /**
+         * Previous X position
+         */
         prevX: 0,
+        /**
+         * Previous Y position
+         */
         prevY: 0,
 
         wheel: 0,
         wheelUp: false,
         wheelDown: false,
 
+        /**
+         * Motion on the X axis (since the last update)
+         */
         motionX: 0,
+        /**
+         * Motion on the Y axis (since the last update)
+         */
         motionY: 0,
 
-        down: false,
-        oldDown: false,
+        /**
+         * Left mouse button is pressed
+         */
+        left: false,
+        oldLeft: false,
 
+        /**
+         * Right mouse button is pressed
+         */
         right: false,
         oldRight: false,
 
+        /**
+         * Middle mouse button is pressed
+         */
         middle: false,
         oldMiddle: false,
     },
@@ -94,25 +127,25 @@ window.addEventListener("keyup", function (e) {
     //input.keys.pressed = input.keys.pressed.filter( a => a != e.key && a != e.key.toLowerCase() && a != e.key.toUpperCase());
 });
 
-window.addEventListener("mousedown", function (e) {
+c.addEventListener("mousedown", function (e) {
     if (document.getElementById("debug")?.contains(e.target)) return;
 
     _updateMousePosition(e);
-    if (e.button == 0) input.mouse.down = true;
+    if (e.button == 0) input.mouse.left = true;
     if (e.button == 1) input.mouse.middle = true;
     if (e.button == 2) input.mouse.right = true;
 });
 
 window.addEventListener("mouseup", function (e) {
     _updateMousePosition(e);
-    if (e.button == 0) input.mouse.down = false;
+    if (e.button == 0) input.mouse.left = false;
     if (e.button == 1) input.mouse.middle = false;
     if (e.button == 2) input.mouse.right = false;
 });
 
 window.addEventListener("mousemove", _updateMousePosition);
 
-window.addEventListener("wheel", function (e) {
+c.addEventListener("wheel", function (e) {
     _updateMousePosition(e);
 
     input.mouse.wheel = e.deltaY;
@@ -125,11 +158,17 @@ window.addEventListener("blur", _inputLost);
 window.addEventListener("focus", _inputLost);
 window.addEventListener("mouseleave", _inputLost);
 
+function _syncMousePos() {
+    input.mouse.pos.x = input.mouse.x;
+    input.mouse.pos.y = input.mouse.y;
+}
+
 function _inputLost() {
     input.mouse.x = 0;
     input.mouse.y = 0;
-    input.mouse.down = false;
+    input.mouse.left = false;
     input.mouse.right = false;
+    input.mouse.middle = false;
 
     input.keys.pressed.clear();
     input.keys.justPressed.clear();
@@ -138,6 +177,8 @@ function _inputLost() {
 function _updateMousePosition(e) {
     input.mouse.x = ((e.clientX - c.offsetLeft) / c.offsetWidth) * c.width;
     input.mouse.y = ((e.clientY - c.offsetTop) / c.offsetHeight) * c.height;
+
+    _syncMousePos();
 }
 
 /**
@@ -152,9 +193,10 @@ function updateInputs() {
     input.mouse.prevX = input.mouse.x;
     input.mouse.prevY = input.mouse.y;
     
-    input.mouse.oldDown = input.mouse.down;
+    input.mouse.oldLeft = input.mouse.left;
     input.mouse.oldRight = input.mouse.right;
     input.mouse.oldMiddle = input.mouse.middle;
+
     input.mouse.wheel = 0;
     input.mouse.wheelUp = false;
     input.mouse.wheelDown = false;

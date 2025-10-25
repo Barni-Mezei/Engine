@@ -19,9 +19,12 @@ setKeybind("d", "d");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
-addDebugOption("grid", "Show grid", "bool", false);
+addDebugOption("grid", "Show grid", "bool", true);
 addDebugOption("collision", "Show colliders", "bool", false);
 addDebugOption("navigation", "Show navigation", "bool", true);
+addDebugOption("boxes", "Show boxes", "bool", true);
+
+setDebugMenu(true);
 
 Resource.loadTexture("../res/small_tiles.png", "terrain");
 Resource.loadFile("./test.json", "terrain_test");

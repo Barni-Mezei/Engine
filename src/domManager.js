@@ -129,6 +129,12 @@ function addDebugOption(id, title, type, defaultValue, value) {
     settings.debug[id] = defaultValue;
 }
 
+function setDebugMenu(state = true) {
+    setClass(document.getElementById("debug"), "hidden", !state);
+}
+
+
+
 /* Panel UI component */
 
 class Panel extends HTMLElement {

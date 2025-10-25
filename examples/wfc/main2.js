@@ -499,7 +499,7 @@ function update() {
         editorPos.x += movementSpeed;
     }
 
-    if (input.mouse.down) {
+    if (input.mouse.left) {
         editorPos = editorPos.add( new Vector(input.mouse.prevX - input.mouse.x, input.mouse.prevY - input.mouse.y).mult(1 / camera.realZoom) );
     }
 

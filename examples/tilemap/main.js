@@ -18,10 +18,13 @@ let soldiers = [];
 class Soldier extends AnimatedSprite {
     agent;
 
+    collider;
+
     name;
 
     cooldown = 0;
     tagetPos = new Vector();
+
 
     constructor(pathFollow, color) {
         let animations = {
@@ -39,12 +42,15 @@ class Soldier extends AnimatedSprite {
 
         this.name = new Label2D(`Soldier ${soldiers.length}`);
         this.name.setSize(16);
+
+        this.collider = new ColliderAABB(this.pos, this.size);
     }
 
     update() {
         super.update();
 
         this.pos = this.agent.pos;
+        this.collider.pos = this.pos;
 
         this.name.setCenter( this.pos.add(new Vector(this.centerOffset.x, 0)) );
         this.name.pos.y += 20;
@@ -64,37 +70,15 @@ class Soldier extends AnimatedSprite {
     }
 
     render() {
-        super.render();
-
         if (settings.debug?.boxes) {
-            ctx.strokeStyle = "#ff0000";
-            ctx.beginPath();
-            ctx.moveTo(...camera.w2cXY(this.left, this.top));
-            ctx.lineTo(...camera.w2cXY(this.left, this.bottom));
-            ctx.stroke();
-    
-            ctx.strokeStyle = "#00ff00";
-            ctx.beginPath();
-            ctx.moveTo(...camera.w2cXY(this.right, this.top));
-            ctx.lineTo(...camera.w2cXY(this.right, this.bottom));
-            ctx.stroke();
-    
-            ctx.strokeStyle = "#0088ff";
-            ctx.beginPath();
-            ctx.moveTo(...camera.w2cXY(this.left, this.top));
-            ctx.lineTo(...camera.w2cXY(this.right, this.top));
-            ctx.stroke();
-    
-            ctx.strokeStyle = "#ff00ff";
-            ctx.beginPath();
-            ctx.moveTo(...camera.w2cXY(this.left, this.bottom));
-            ctx.lineTo(...camera.w2cXY(this.right, this.bottom));
-            ctx.stroke();
+            this.collider.render();
         }
 
-        if (distance(...camera.w2cXY(this.center.x, this.center.y), input.mouse.x, input.mouse.y) < camera.w2csX(Math.min(this.size.x, this.size.y) / 2)) {
+        if (this.collider.isColliding(mouse.pos)) {
             this.name.render();
         }
+
+        super.render();
     }
 }
 
@@ -214,11 +198,11 @@ function update() {
     navStrength = clamp(navStrength, 0, 1);
 
     // Set tiles
-    if (input.mouse.down) {
+    if (input.mouse.left) {
         if (currentLayerIndex < 2) {
             tilemap.setTileAt(currentLayerIndex, tilePos, currentTile);
         } else {
-            tilemap.setTileNavigation(0, tilePos, navStrength);
+            tilemap.setTileNavigationAt(0, tilePos, navStrength);
         }
     }
 
@@ -227,7 +211,7 @@ function update() {
         if (currentLayerIndex < 2) {
             tilemap.setTileAt(currentLayerIndex, tilePos, null);
         } else {
-            tilemap.setTileNavigation(0, tilePos, 1);
+            tilemap.setTileNavigationAt(0, tilePos, 1);
         }
     }
 

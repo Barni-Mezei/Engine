@@ -185,7 +185,7 @@ function render() {
 
 function update() {
     // Re-assign taget
-    if (input.mouse.down) {
+    if (input.mouse.left) {
         paths.forEach((p, index) => {
             let point = Vector.fromAngle(positions[index].angle + formationRotation, positions[index].length);
 

@@ -61,7 +61,7 @@ div#debug pre#text {
     overflow-x: hidden;
 }
 
-div#debug .item {
+div#debug .item:first-of-type {
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
