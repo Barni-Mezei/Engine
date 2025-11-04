@@ -773,8 +773,8 @@ class TileMap extends Object2D {
             this.atlasData[key] = atlasData[key];
         }
 
-        let imageWidth = this.atlasTexture?.cropData.width ?? this.atlasTexture.image.width;
-        let imageHeight = this.atlasTexture?.cropData.height ?? this.atlasTexture.image.height;
+        let imageWidth = this.atlasTexture?.cropData?.width ?? this.atlasTexture.image.width;
+        let imageHeight = this.atlasTexture?.cropData?.height ?? this.atlasTexture.image.height;
 
         // Complete atlas size
         if (!this.atlasData.rows) {

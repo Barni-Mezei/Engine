@@ -33,10 +33,10 @@ function weightedRandom(weightSet) {
 
     for (let value in weightSet) {
         sum += weightSet[value];
-        if (rnd <= sum) return parseInt(value);
+        if (rnd <= sum) return value;
     }
 
-    return parseInt(Object.keys(weightSet)[0]); //Default to the first value
+    return Object.keys(weightSet)[0]; //Default to the first value
 }
 
 /**

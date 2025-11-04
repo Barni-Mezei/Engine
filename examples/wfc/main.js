@@ -10,8 +10,7 @@ let lastCell = new Vector();
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(20);
-
+const GRID_SIZE = new Vector(50);
 let DONE = false;
 let ATTEMPTS = 0;
 
@@ -54,7 +53,7 @@ function updateEntropy(x, y) {
     needsUpdating.push(`${x - 1};${y}`);
 
     let iter = 0;
-    let MAX_ITER = GRID_SIZE.x * GRID_SIZE.y;
+    let MAX_ITER = 10 //GRID_SIZE.x * GRID_SIZE.y;
 
     function addIfUnique(array, value) {
         if (!array.includes(value)) array.push(value);
@@ -74,8 +73,6 @@ function updateEntropy(x, y) {
             addIfUnique(array, `${side.x};${side.y}`);
         }
     }
-
-
 
     let grid = tilemap.getGrid("graphics_0");
 
@@ -100,7 +97,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y - 1)) {
             let top = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, topTilePos).possible) {
-                top = top + getAllowedTiles(possibleValue, 2);
+                top = top.concat(getAllowedTiles(possibleValue, 2));
             }
             let oldSize = allowedTiles.size;
 
@@ -118,7 +115,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x + 1, currrentTilePos.y)) {
             let right = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, rightTilePos).possible) {
-                right = right + getAllowedTiles(possibleValue, 3);
+                right = right.concat(getAllowedTiles(possibleValue, 3));
             }
             let oldSize = allowedTiles.size;
             
@@ -137,7 +134,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y + 1)) {
             let bottom = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, bottomTilePos).possible) {
-                bottom = bottom + getAllowedTiles(possibleValue, 0);
+                bottom = bottom.concat(getAllowedTiles(possibleValue, 0));
             }
             let oldSize = allowedTiles.size;
             
@@ -175,10 +172,11 @@ function updateEntropy(x, y) {
         /*console.log("result", allowedTiles);
 
         console.groupEnd();*/
-        if (tilemap.getTileMetaAt(0, currrentTilePos, "sides")) continue; // Keep collapsed tiles intacted
+        if (tilemap.getTileMetaAt(0, currrentTilePos, "sides")) continue; // Keep collapsed tiles intact
         tilemap.setTileMetaAt(0, currrentTilePos, "possible", Array(...allowedTiles));
     }
 }
+
 
 function eraseGrid() {
     tilemap.clear("graphics_0", null);
@@ -207,11 +205,13 @@ function eraseSection(centerX, centerY, width, height) {
         for (let x = 0; x < width; x++) {
             tilemap.setTileAt(0, new Vector(startX + x, startY + y), null);
             tilemap.setTileMetaAt(0, new Vector(startX + x, startY + y), "possible", tilemap.tileIds);
-            updateEntropy(centerX, centerY);
         }
     }
 
-    visualiseEntropy();
+    //updateEntropy(startX + x, startY + y);
+    updateEntropy(centerX, centerY);
+
+    //visualiseEntropy();
 }
 
 function iterate() {
@@ -231,6 +231,7 @@ function iterate() {
     if (cells.length == 0) {
         DONE = true;
         console.log("%cDone!", "font-size: 20px; color: #66ff00;");
+        markerPos = new Vector(-1);
         return;
     }
 
@@ -254,17 +255,16 @@ function iterate() {
 
     if (possibleValues.length == 0) {
         ATTEMPTS++;
-        console.log("%cRestarting...", "font-size: 20px; color: #ff4400;");
+        //console.log("%cRestarting...", "font-size: 20px; color: #ff4400;");
 
         //tilemap.setTileAt(0, lowestEntropyCell.pos, "error_0");
         //tilemap.setTileMetaAt(0, lowestEntropyCell.pos, "possible", tilemap.tileIds);
-        DONE = true;
+        //DONE = true;
 
-        console.log(cells);
+        //console.log(cells);
 
-        markerPos = lastCell;
-
-        //eraseSection(lastCell, lastCell, 1, 1);
+        markerPos = lowestEntropyCell.pos;
+        eraseSection(markerPos.x, markerPos.y, 5, 5);
 
         //eraseGrid();
         return;
@@ -280,8 +280,6 @@ function iterate() {
     visualiseEntropy();
 
     lastCell = lowestEntropyCell.pos;
-
-    //debugger;
 }
 
 // Game loop
@@ -392,9 +390,6 @@ function update() {
         fitToView();
     }
 
-
-
-    
     camera.clampValues();
     camera.lookAt(editorPos, true);
     camera.update();
@@ -406,14 +401,13 @@ function update() {
     currentTileId = tilemap.getTileAt(0, tilePos);
 
     // Tilemap updating functions
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 10; i++) {
         iterate();
     }
 
-
-    /*if (isKeyPressed("space")) {
-        iterate();
-    }*/
+    if (isKeyPressed("space")) {
+        eraseGrid();
+    }
 
     if (input.mouse.right) {
         eraseSection(tilePos.x, tilePos.y, 5, 5);
@@ -431,19 +425,19 @@ function render() {
     // Current hovered tile
     if (currentTileId != null) {
         ctx.drawImage(
-            tilemap.getTileById(currentTileId).texture,
+            tilemap.getTileById(currentTileId).texture.image,
             c.width - 100, 0, 100, 100
         );
     }
 
     // Marker
-    if (markerPos.x > -1) {
+    /*if (markerPos.x > -1) {
         ctx.strokeStyle = "#ff0000";
         ctx.lineWidth = camera.w2csX(4);
         ctx.beginPath();
         ctx.rect(...camera.w2cf(markerPos.mult(tilemap.tileSize), tilemap.tileSize));
         ctx.stroke()
-    }
+    }*/
 
     // Tile cursor
     /*ctx.strokeStyle = "#00ddff";

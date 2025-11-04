@@ -5,7 +5,7 @@ let editorPos = new Vector(); // World coordinate
 let cursorPos = new Vector(); // Snapped world space coordinate
 let tilePos = new Vector(); // Tilemap tile coordinate
 
-let markerPos = new Vector(); // Error marker position
+let markerPos = new Vector(-1); // Error marker position
 let lastCell = new Vector();
 
 let currentTileId = ""; // Name of the current tile
@@ -55,7 +55,7 @@ const colors = {
     "z": "#6200ffff",
 }
 
-const GRID_SIZE = new Vector(10);
+const GRID_SIZE = new Vector(100);
 
 let DONE = false;
 let ATTEMPTS = 0;
@@ -145,7 +145,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y - 1)) {
             let top = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, topTilePos).possible) {
-                top = top + getAllowedTiles(possibleValue, 2);
+                top = top.concat(getAllowedTiles(possibleValue, 2));
             }
             let oldSize = allowedTiles.size;
 
@@ -163,7 +163,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x + 1, currrentTilePos.y)) {
             let right = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, rightTilePos).possible) {
-                right = right + getAllowedTiles(possibleValue, 3);
+                right = right.concat(getAllowedTiles(possibleValue, 3));
             }
             let oldSize = allowedTiles.size;
             
@@ -182,7 +182,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y + 1)) {
             let bottom = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, bottomTilePos).possible) {
-                bottom = bottom + getAllowedTiles(possibleValue, 0);
+                bottom = bottom.concat(getAllowedTiles(possibleValue, 0));
             }
             let oldSize = allowedTiles.size;
             
@@ -220,7 +220,7 @@ function updateEntropy(x, y) {
         /*console.log("result", allowedTiles);
 
         console.groupEnd();*/
-        if (tilemap.getTileMetaAt(0, currrentTilePos, "sides")) continue; // Keep collapsed tiles intacted
+        if (tilemap.getTileMetaAt(0, currrentTilePos, "sides")) continue; // Keep collapsed tiles intact
         tilemap.setTileMetaAt(0, currrentTilePos, "possible", Array(...allowedTiles));
     }
 }
@@ -233,7 +233,7 @@ function eraseGrid() {
         tile.meta.possible = tilemap.tileIds;
     });*/
 
-    placeRandomTile("sand_" + randInt(0, 5));
+    //placeRandomTile("sand_" + randInt(0, 5));
 
     //visualiseEntropy();
 }
@@ -255,9 +255,11 @@ function eraseSection(centerX, centerY, width, height) {
         for (let x = 0; x < width; x++) {
             tilemap.setTileAt(0, new Vector(startX + x, startY + y), null);
             tilemap.setTileMetaAt(0, new Vector(startX + x, startY + y), "possible", tilemap.tileIds);
-            updateEntropy(centerX, centerY);
         }
     }
+
+    //updateEntropy(startX + x, startY + y);
+    updateEntropy(centerX, centerY);
 
     //visualiseEntropy();
 }
@@ -279,6 +281,7 @@ function iterate() {
     if (cells.length == 0) {
         DONE = true;
         console.log("%cDone!", "font-size: 20px; color: #66ff00;");
+        markerPos = new Vector(-1);
         return;
     }
 
@@ -311,26 +314,37 @@ function iterate() {
 
         //console.log(cells);
 
-        markerPos = lastCell;
+        markerPos = lowestEntropyCell.pos;
+        eraseSection(markerPos.x, markerPos.y, 5, 5);
 
-        //eraseSection(lastCell, lastCell, 1, 1);
-
-        eraseGrid();
+        //eraseGrid();
         return;
     }
 
+    let tileWeights = {};
+    let tileWeightSum = 0;
+
+    for (let key of possibleValues) {
+        tileWeights[key] = tilemap.getTileMeta(key, "weight");
+        tileWeightSum += tileWeights[key];
+    }
+
+    // Normailse weights
+    for (let key in tileWeights) {
+        tileWeights[key] /= tileWeightSum;
+    }
+
     // TODO: Use weighted random
-    let chosenTile = possibleValues[randInt(0, possibleValues.length - 1)];
+    //let chosenTile = possibleValues[randInt(0, possibleValues.length - 1)];
+    let chosenTile = weightedRandom(tileWeights);
 
     tilemap.setTileAt(0, lowestEntropyCell.pos, chosenTile);
     tilemap.setTileMetaAt(0, lowestEntropyCell.pos, "possible", [chosenTile]);
 
     updateEntropy(lastCell.x, lastCell.y);
-    //visualiseEntropy();
+    visualiseEntropy();
 
     lastCell = lowestEntropyCell.pos;
-
-    //debugger;
 }
 
 // Game loop
@@ -367,7 +381,7 @@ function init() {
         tilemap.renameTile(`tile_${x}_${y}`, `${name}`);
     }
 
-    function addFeature(startX, startY, width, height, name, letter, rules) {
+    function addFeature(startX, startY, width, height, name, letter, rules, weight) {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 let tileX = startX + x;
@@ -383,29 +397,29 @@ function init() {
                     }
                 }
 
-                addTile(tileX, tileY, `${name}_${x}_${y}`, sides, 1);
+                addTile(tileX, tileY, `${name}_${x}_${y}`, sides, weight);
             }
         }
     }
 
     // Sand tiles
-    addTile(0, 0, "sand_0",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(1, 0, "sand_1",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(2, 0, "sand_2",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(3, 0, "sand_3",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(2, 1, "sand_4",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(3, 1, "sand_5",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(2, 2, "sand_6",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(3, 2, "sand_7",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(3, 3, "sand_8",  ["sssss", "sssss", "sssss", "sssss"], 1);
-    addTile(3, 4, "sand_9",  ["sssss", "sssss", "sssss", "sssss"], 1);
+    addTile(0, 0, "sand_0",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(1, 0, "sand_1",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(2, 0, "sand_2",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(3, 0, "sand_3",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(2, 1, "sand_4",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(3, 1, "sand_5",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(2, 2, "sand_6",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(3, 2, "sand_7",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(3, 3, "sand_8",  ["sssss", "sssss", "sssss", "sssss"], 10);
+    addTile(3, 4, "sand_9",  ["sssss", "sssss", "sssss", "sssss"], 10);
     addTile(3, 5, "sand_10", ["sssss", "sssss", "sssss", "sssss"], 1);
 
     // Strict small ridge, always 2x2
     addFeature(0,1, 2,2, "ridge", "r", [
         ["x12x", "xx31"],
         ["24xx", "3xx4"],
-    ]);
+    ], 1);
 
     // Strict hole, always 3x3
     /*addFeature(0,3, 3,3, "hole", "h", [
@@ -419,14 +433,14 @@ function init() {
         ["x12x", "x131", "xx41"],
         ["232x", "3333", "4x43"],
         ["25xx", "35x5", "4xx5"],
-    ]);
+    ], 1);
 
     // Strict crater, always 3x3
     addFeature(0,6, 3,3, "crater", "l", [
         ["x12x", "x341", "xx53"],
         ["267x", "4896", "5xa8"],
         ["7bxx", "9cxb", "axxc"],
-    ]);
+    ], 1);
 
     // Strict 5x3 template
     /*addFeature(0,9, 3,5, "", "A", [
@@ -438,45 +452,43 @@ function init() {
     ]);*/
 
     // Strict big ridge, always 3x5
-    /*addFeature(0,9, 3,5, "big_ridge", "n", [
+    addFeature(0,9, 3,5, "big_ridge", "n", [
         ["????", "x12x", "xx31"],
         ["x45x", "2674", "3x86"],
         ["59ax", "7bc9", "8xxb"],
         ["adxx", "cxed", "????"],
         ["????", "exxx", "????"],
-    ]);*/
+    ], 1);
 
     // Strict small crater, always 2x2
     addFeature(0,14, 2,2, "small_crater", "c", [
         ["x12x", "xx31"],
         ["24xx", "3xx4"],
-    ]);
+    ], 1);
 
     // Strict 4x5 template
-    /*addFeature(0,16, 4,5, "", "B", [
+    addFeature(0,16, 4,5, "skull", "B", [
         ["x12x", "x341", "x563", "xx75"],
         ["289x", "4ab8", "6cda", "7xec"],
         ["9fgx", "bhif", "djkh", "exlj"],
         ["gmnx", "iopm", "kqro", "rxsq"],
         ["ntxx", "puxt", "rvxu", "sxxv"],
-    ]);*/
+    ], 10);
 
     //Skull, always 4x5
-    /*addFeature(0,16, 4,5, "", "z", [
+    /*addFeature(0,16, 4,5, "skull", "z", [
         ["x12x", "x341", "x563", "xx75"],
         ["289x", "4ab8", "6cda", "7xec"],
         ["9fgx", "bhif", "djkh", "exlj"],
         ["gmxx", "iopm", "kqro", "rxsq"],
-        ["???", "puxx", "rvxu", "sxxv"],
-    ]);*/
-
+        ["????", "puxx", "rvxu", "sxxv"],
+    ], 10);*/
 
     eraseGrid();
-
+    visualiseEntropy();
     
     // Initialise camera
     fitToView();
-    //visualiseEntropy();
 }
 
 function update() {
@@ -533,7 +545,7 @@ function update() {
     currentTileId = tilemap.getTileAt(0, tilePos);
 
     // Tilemap updating functions
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
         iterate();
     }
 
@@ -545,7 +557,8 @@ function update() {
     }
 
     if (input.mouse.right) {
-        eraseSection(tilePos.x, tilePos.y, 5, 5);
+        eraseSection(tilePos.x, tilePos.y, 9, 9);
+        markerPos = new Vector(-1);
         DONE = false;
     }
 }
@@ -566,7 +579,7 @@ function render() {
         let startY = 0;
 
         ctx.drawImage(
-            tilemap.getTileById(currentTileId).texture,
+            tilemap.getTileById(currentTileId).texture.image,
             startX, startY, iconSize.x, iconSize.y
         );
 
@@ -603,13 +616,13 @@ function render() {
     }
 
     // Marker
-    /*if (markerPos.x > -1) {
+    if (markerPos.x > -1) {
         ctx.strokeStyle = "#ff0000";
         ctx.lineWidth = camera.w2csX(4);
         ctx.beginPath();
         ctx.rect(...camera.w2cf(markerPos.mult(tilemap.tileSize), tilemap.tileSize));
         ctx.stroke()
-    }*/
+    }
 
     // Tile cursor
     /*ctx.strokeStyle = "#00ddff";
