@@ -713,16 +713,6 @@ class TileMap extends Object2D {
     constructor(atlasTextureId, atlasData, width, height) {
         super(new Vector(), new Vector(1, 1));
 
-        // Remove unnecessary properties
-        delete this.gridTileSize;
-        delete this.tiles;
-        delete this.importTilemap;
-        delete this.exportTilemap;
-        delete this.renameTilebyAtlasPos;
-        delete this._updateTileMapSize;
-        delete this._updateTileSizes;
-        delete this.grid;
-
         // Default value for the tilemap's settings
         this.settings = {
             autoUpdate: false,
@@ -761,6 +751,24 @@ class TileMap extends Object2D {
 
         this._updateSize();
         //this._updateTilePatterns();
+    }
+
+    /**
+     * Translates the position of a tile on the tilemap in to world space
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @returns {Vector} The world space coordinate of the top left corner of the specified tile
+     */
+    tileToWorld(tilePos) {
+        return this.pos.add(tilePos.mult(this.#gridTileSize));
+    }
+
+    /**
+     * Translates the position of a tile on the tilemap in to world space
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @returns {Vector} The world space coordinate of the center of the specified tile
+     */
+    tileCenterToWorld(tilePos) {
+        return this.pos.add(tilePos.mult(this.#gridTileSize).add(this.#gridTileSize.mult(0.5)));
     }
 
     /**
@@ -1515,6 +1523,8 @@ class TileMap extends Object2D {
             return failure
         */
 
+        let self = this;
+
         // Helper
         function posToString(tilePos) {
             return `${tilePos.x};${tilePos.y}`;
@@ -1525,29 +1535,31 @@ class TileMap extends Object2D {
         }
 
         function generatePath(cameFrom, current) {
-            console.log("Generated!", cameFrom, current);
             let tiles = [current];
-            let points = [current];
+            let points = [self.tileCenterToWorld(current)];
 
             current = posToString(current);
 
             let visited = new Set();
 
             while (current in cameFrom) {
-                if (visited.has(current)) return new Path([new Vector(), new Vector(1)]);
+                if (visited.has(current)) return null;
                 let old = current;
                 current = cameFrom[current];
-                points.unshift(current);
+                points.unshift(self.tileCenterToWorld(current));
                 tiles.unshift(current);
                 visited.add(old);
                 current = posToString(current);
             }
 
-            return new Path(points);
+            return {
+                tiles: tiles,
+                points: points
+            };
         }
 
         function heuristics(tilePos) {
-            return Math.sqrt(Math.pow(Math.abs(endPos.x - tilePos.x), 2) + Math.pow(Math.abs(endPos.y - tilePos.y), 2)) / 2;
+            return Math.sqrt(Math.pow(Math.abs(endPos.x - tilePos.x), 2) + Math.pow(Math.abs(endPos.y - tilePos.y), 2)) / 2 + randFloat(0, 2);
         }
 
         let cameFrom = {};
@@ -1628,9 +1640,7 @@ class TileMap extends Object2D {
 
         }
 
-        console.log("Fail", tilesToCheck, iter);
-
-        return new Path([startPos, endPos]);
+        return null;
     } 
 
     _updateCollision(collisionLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes collision layers */

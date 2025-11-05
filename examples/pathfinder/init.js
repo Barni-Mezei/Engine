@@ -19,6 +19,10 @@ setKeybind("r", "r");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
+addDebugOption("travel", "Travel cost", "bool", true);
+addDebugOption("coll", "Pathfinding", "bool", true);
+addDebugOption("path", "Paths", "bool", true);
+
 setDebugMenu(true);
 
 Resource.loadTexture("../res/tile_set_01.png", "terrain");
