@@ -58,7 +58,7 @@ function distance(x1,y1, x2,y2) {
  * @param {Number} value The value to constrain 
  * @param {Number} min Minimum allowed value
  * @param {Number} max Maximum allowed value
- * @returns {Number} The input number (value), but clipped if outside of the given range
+ * @returns {Number} The input number constrained between the minimum and maximum values
  */
 function clamp(value, min, max) {
     return Math.min(max, Math.max(value, min));

@@ -111,7 +111,7 @@ class Resource {
 
         // Creating new image
         let newImage = document.createElement("img");
-        newImage.src = path;
+        newImage.path = path;
 
         Resource.textures[name] = {
             image: newImage,
@@ -158,10 +158,10 @@ class Resource {
         Resource.maxLoadables++;
 
         let newAudio = new Audio();
-        newAudio.src = path;
+        newAudio.path = path;
 
         Resource.sounds[name] = {
-            audio: new Audio(path),
+            audio: newAudio,
         }
 
         Resource.sounds[name].playData = {
@@ -273,23 +273,19 @@ class Resource {
     }
 
     static onTextureLoad(name) {
-        Resource.loaded++;
-
         //Log the texture is loaded
         console.log(`Texture: %c${name}%c is loaded, total: ${Resource.loaded} / ${Resource.maxLoadables}`,
         "font-weight: bold; color: #0df", "font-weight: normal");
 
-        if (Resource.loaded >= Resource.maxLoadables) Resource._loadingDone();
+        Resource._loaded();
     }
 
     static onSoundLoad(name) {
-        Resource.loaded++;
-
         //Log the sound is loaded
         console.log(`Sound: %c${name}%c is loaded, total: ${Resource.loaded} / ${Resource.maxLoadables}`,
         "font-weight: bold; color: #f0d", "font-weight: normal");
 
-        if (Resource.loaded >= Resource.maxLoadables) Resource._loadingDone();
+        Resource._loaded();
     }
     
     static async onFileLoad(name, blob) {
@@ -297,11 +293,16 @@ class Resource {
         Resource.files[name].metaData.size = blob.size;
         Resource.files[name].metaData.type = blob.type;
 
-        Resource.loaded++;
-
         //Log the sound is loaded
         console.log(`File: %c${name}%c is loaded, total: ${Resource.loaded} / ${Resource.maxLoadables}`,
         "font-weight: bold; color: #fd0", "font-weight: normal");
+
+        Resource._loaded();
+    }
+
+    static _loaded() {
+        Resource.loaded++;
+        _loading();
 
         if (Resource.loaded >= Resource.maxLoadables) Resource._loadingDone();
     }
@@ -330,11 +331,15 @@ class Resource {
         }
 
         for (let name in Resource.textures) {
-            Resource.textures[name].image.onload = Resource.onTextureLoad(name);
+            Resource.textures[name].image.addEventListener("load", function () { Resource.onTextureLoad(name); });
+            Resource.textures[name].image.src = Resource.textures[name].image.path; // Start loading the image
         }
         
         for (let name in Resource.sounds) {
-            Resource.sounds[name].audio.onload = Resource.onSoundLoad(name);
+            Resource.sounds[name].audio.src = Resource.sounds[name].audio.path; // Start loading the audio
+            Resource.sounds[name].audio.preload = "auto";
+
+            Resource.sounds[name].audio.addEventListener("loadeddata", function () { Resource.onSoundLoad(name); });
         }
 
         if (Resource.maxLoadables == 0) {

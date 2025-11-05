@@ -71,14 +71,38 @@ function setClass(element, calssName, state) {
 function buildDebugMenu() {
     let container = document.getElementById("debug");
 
-    // No debug container found
-    if (container != null) return;
+    // There is a debug container already
+    if (container !== null) return;
 
     container = document.createElement("div");
     container.id = "debug";
     container.classList.add("hidden");
     container.innerHTML = `<pre id="fps">FPS: 60 UPS: 120</pre><pre id="text"></pre>`;
     document.body.appendChild(container);
+}
+
+function buildLoadingBar() {
+    let container = document.getElementById("loading_overlay");
+
+    // There is a loading overlay already
+    if (container !== null) return;
+
+    container = document.createElement("div");
+    container.id = "loading_overlay";
+    container.innerHTML = `<h1>Loading...</h1><div id="loading_bar"><div class="background"></div></div>`;
+    document.body.appendChild(container);
+}
+
+/**
+ * Updates the fill level of the resource loading progress bar
+ * @param {Number} percent The percent, the bar is filled
+ */
+function setLoadingBarProgress(percent) {
+    let loadingBar = document.querySelector("#loading_bar .background");
+
+    if (loadingBar === null) return;
+
+    loadingBar.style.width = percent + "%";
 }
 
 /**
@@ -129,11 +153,13 @@ function addDebugOption(id, title, type, defaultValue, value) {
     settings.debug[id] = defaultValue;
 }
 
+/**
+ * Shows or hides the debug menu
+ * @param {Boolean} state Is the menu visible?
+ */
 function setDebugMenu(state = true) {
     setClass(document.getElementById("debug"), "hidden", !state);
 }
-
-
 
 /* Panel UI component */
 

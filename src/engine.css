@@ -4,6 +4,10 @@
     --not-blue: #00aaff;
     --not-yellow: #ffdd00;
 
+    --bar-color: #cfc34c;
+    --bar-bg-color: #131411;
+    --bar-bg-color-dark:#1e1f1c;
+
     --debug-a: #ddd;
     --debug-gray: #aaa;
     --debug-bg: #888;
@@ -180,5 +184,92 @@ div#ui {
         height: 0px;
         margin-bottom: -15px;
         opacity: 0;
+    }
+}
+
+
+/* Loading bar */
+
+#loading_overlay {
+    position: fixed;
+    display: flex;
+
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: center;
+
+    top: 0px;
+    left: 0px;
+
+    width: 100vw;
+    height: 100vh;
+
+    z-index: 9999;
+}
+
+#loading_overlay h1 {
+    color: white;
+
+    text-align: center;
+    font-family: monospace;
+
+    font-size: 48px;
+}
+
+#loading_bar {
+
+
+    height: 20px;
+    width: 50vw;
+
+    border: 5px solid var(--bar-bg-color-dark);
+    border-radius: 100vw;
+
+    background-color: var(--bar-bg-color-dark);
+
+    overflow: hidden;
+}
+
+#loading_bar .background {
+    width: 0%;
+    height: 100%;
+
+    background: linear-gradient(-45deg,
+        var(--bar-bg-color) 0%,
+        var(--bar-bg-color) 12.5%,
+        var(--bar-color) 12.5%,
+        var(--bar-color) 37.5%,
+        var(--bar-bg-color) 37.5%,
+        var(--bar-bg-color) 62.5%,
+        var(--bar-color) 62.5%,
+        var(--bar-color) 87.5%,
+        var(--bar-bg-color) 87.5%,
+        var(--bar-bg-color) 100%
+    );
+
+    background-size: 64px 64px;
+
+    animation: bar-scroll 1s linear infinite;
+
+    transition: width 0.5s;
+}
+
+@keyframes bar-scroll {
+    0% {
+        background-position-x: 0%;
+    }
+
+    100% {
+        background-position-x: 64px;
+    }
+}
+
+@keyframes bar-move-out {
+    0% {
+        transform: translateY(0%);
+    }
+
+    0% {
+        transform: translateY(100%);
     }
 }

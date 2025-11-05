@@ -1,5 +1,5 @@
 let player = {
-    texture: new Texture("player"),
+    texture: null,
     pos: new Vector(),
     speed: 10,
 }
@@ -22,7 +22,7 @@ function init() {
         });
     }
 
-    //player.texture = new Texture("player");
+    player.texture = new Texture("player");
 }
 
 function update() {

@@ -88,11 +88,37 @@ class Point extends Object2D {
         this.color = color;
     }
 
-    render(pos) {
+    render(offset) {
         ctx.fillStyle = this.color;
 
         ctx.beginPath();
-        ctx.arc(...camera.w2c(this.pos).toArray(), 10, 0, Math.PI * 2);
+        ctx.arc(...camera.w2c(this.pos.add(offset)).toArray(), 10, 0, Math.PI * 2);
         ctx.fill();
+    }
+}
+
+class Line {
+    start = new Vector();
+    end = new Vector();
+    color = "#55ff44";
+
+    constructor(start, end, color = "#55ff44") {
+        this.start = start;
+        this.end = end;
+
+        this.color = color;
+    }
+
+    render(offset) {
+        ctx.strokeStyle = this.color;
+
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.beginPath();
+        ctx.moveTo(...camera.w2c(this.start.add(offset)).toArray());
+        ctx.lineTo(...camera.w2c(this.end.add(offset)).toArray());
+        ctx.stroke();
     }
 }

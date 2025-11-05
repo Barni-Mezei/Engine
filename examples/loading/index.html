@@ -7,7 +7,76 @@
 
     <link rel="stylesheet" href="/src/engine.css">
     
-    <title>Examples - camera</title>
+    <title>Loading example</title>
+
+    <style>
+        #ui {
+            display: flex;
+
+            flex-flow: column nowrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #ui h1 {
+            color: white;
+
+            text-align: center;
+            font-family: monospace;
+
+            font-size: 48px;
+        }
+
+        #loading_bar {
+            --bar-color: #cfc34c;
+            --bg-color: #131411;
+            --bg-color-dark:#1e1f1c ;
+
+            height: 20px;
+            width: 50vw;
+
+            border: 5px solid var(--bg-color-dark);
+            border-radius: 100vw;
+
+            background-color: var(--bg-color-dark);
+
+            overflow: hidden;
+        }
+
+        #loading_bar .background {
+            width: 0%;
+            height: 100%;
+
+            background: linear-gradient(-45deg,
+                var(--bg-color) 0%,
+                var(--bg-color) 12.5%,
+                var(--bar-color) 12.5%,
+                var(--bar-color) 37.5%,
+                var(--bg-color) 37.5%,
+                var(--bg-color) 62.5%,
+                var(--bar-color) 62.5%,
+                var(--bar-color) 87.5%,
+                var(--bg-color) 87.5%,
+                var(--bg-color) 100%
+            );
+
+            background-size: 64px 64px;
+
+            animation: scroll 1s linear infinite;
+
+            transition: width 0.5s;
+        }
+
+        @keyframes scroll {
+            0% {
+                background-position-x: 0%;
+            }
+
+            100% {
+                background-position-x: 64px;
+            }
+        }
+</style>
 </head>
 
 <body oncontextmenu="return false">
@@ -34,6 +103,7 @@
 
     <script defer src="init.js"></script>
     <script defer src="main.js"></script>
+
 </body>
 
 </html>

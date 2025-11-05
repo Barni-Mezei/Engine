@@ -18,7 +18,9 @@ window.onresize = canvasFillScreen;
 
 canvasFillScreen();
 
+// Create essential HTML elements
 buildDebugMenu();
+buildLoadingBar();
 
 /**
  * Delta time, fps and ups calculations
@@ -182,10 +184,20 @@ window.addEventListener("load", function () {
     _start();
 });
 
+async function _loading() {
+    // Update loading bar progress
+    setLoadingBarProgress((Resource.loaded / Resource.maxLoadables) * 100);
+
+    if (typeof(loading) === typeof(Function)) await loading(Resource.maxLoadables, Resource.loaded);
+}
+
 async function _start() {
     if (!_bodyLoaded) return; // document.body is not loaded
     if (Resource.loaded < Resource.maxLoadables) return; // Not all resources are loaded
     if (frameCounter != 0) return; // Main loop is already running
+
+    // Hide loading bar
+    document.querySelector("#loading_overlay").classList.add("hidden");
 
     // Call init function, before starting the main loop
     if (typeof(init) === typeof(Function)) await init();

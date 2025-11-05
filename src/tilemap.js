@@ -1151,6 +1151,16 @@ class TileMap extends Object2D {
     }
 
     /**
+     * Removes a tile from the tileset of this tilemap (WARNING: The tile will not be removed from the tilemap)
+     * @param {String} tileId The ID of a tile from the tileset
+     */
+    deleteTile(tileId) {
+        if (!(tileId in this.#tiles)) return;
+
+        delete this.#tiles[tileId];
+    }
+
+    /**
      * Sets the metadata for a tile in the tileset. Later placed tiles in the grid will inherit it
      * @param {String} tileId The ID of a tile from the tileset
      * @param {String} key The key of the metadata
@@ -1189,7 +1199,18 @@ class TileMap extends Object2D {
         return this.#tiles[tileId];
     }
 
-    getTileByAtlasPos(atlasPos) {throw Error("Not implemented")}
+    /**
+     * Returns with a tile at the specified atlas coordinates.
+     * @param {Vector} atlasPos The atlas coordinates in the tileset
+     * @returns {Object|null} The tile it self, or null if no tile was found
+     */
+    getTileByAtlasPos(atlasPos) {
+        for (let tileId in this.#tiles) {
+            if (this.#tiles[tileId].atlasPos.isEqual(atlasPos)) return this.#tiles[tileId];
+
+            return null;
+        }
+    }
 
     /**
      * Returns with the first tile in the tileset
@@ -1314,7 +1335,18 @@ class TileMap extends Object2D {
         this.getGrid(layerId)?.forEach(callback);
     }
 
-    map(layerId, callback) {throw Error("Not implemented")} /* sets the tile to what the callback returns with */
+    /**
+     * Executes the provided callback function on each tile on the specified layer and replaces the tile with the returned value
+     * @param {String} layerId The ID of a layer (example: "graphics_0")
+     * @param {Function} callback The function which will get called on every tile. Parameters:
+     * - x: The X coordinate of the current tile
+     * - y: The Y coordinate of the current tile
+     * - cell: The tile itself
+     * - The function must return with a valid tile.
+     */
+    map(layerId, callback) {
+        this.getGrid(layerId)?.map(callback);
+    }
     
     /**
      * Returns a new grid with only a few tiles selected from the specified layer
@@ -1352,7 +1384,25 @@ class TileMap extends Object2D {
     getTileCollision(collisionLayer, tilePos) {throw Error("Not implemented")}
     getAllTileCollision(tilePos) {throw Error("Not implemented")} /* ret artray of layer collisions */
 
-    isColliding(layerIds /* single layer id, or array of layer ids */,point  /* world pos coordinate: vec2 */) {throw Error("Not implemented")}
+    /**
+     * Checks if the specified point is colliding with thge tilemap, on the specified layers
+     * @param {Array} layerIds An array of tile IDs to test for collision (example: "graphics_0")
+     * @param {Vector} point A point on world space to test if it is colliding with the tilemap
+     * @returns {Boolean} Is the point colliding?
+     */
+    isColliding(layerIds, point) {
+        if (layerIds.length == 0) return false;
+        
+        for (let layerId of layerIds) {
+            let grid = this.getGrid(layerId);
+
+            if (grid == null) continue;
+
+            // TODO: Get closest tiles and check for collision
+        }
+
+        return false;
+    }
 
     // Navigation
 
@@ -1411,6 +1461,8 @@ class TileMap extends Object2D {
         (always) graphics_1 to graphics_n
         (debug) collision_1 to collision_n
         (debug) nav_1 to nav_1
+        
+        Tiles, then objects on top
         */
 
         let self = this;
@@ -1433,7 +1485,7 @@ class TileMap extends Object2D {
                     ...camera.w2c(tilePos).toArray(), ...camera.w2cs(self.tileSize).toArray()
                 );*/
 
-                camera.renderTexture(self.getTileById(tile.id).texture, ...tilePos.toArray(), self.tileWidth, self.tileHeight)
+                camera.renderTexture(self.getTileById(tile.id).texture, ...tilePos.toArray(), self.tileWidth, self.tileHeight);
             });
         }
 

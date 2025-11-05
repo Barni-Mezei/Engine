@@ -1,5 +1,5 @@
-camera.settings.glideSpeed = 0.1;
-//camera.zoom = 0.5;
+camera.settings.glideSpeed = 0.05;
+camera.zoom = 0.5;
 
 setKeybind("moveUp", "w")
 setKeybind("moveLeft", "a")
