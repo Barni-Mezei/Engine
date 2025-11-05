@@ -1379,7 +1379,17 @@ class TileMap extends Object2D {
 
     // Special
     // Collision
-    setTileCollision(collisionLayer, tilePos, value) {throw Error("Not implemented")}
+    setTileCollisionAt(collisionLayer, tilePos, value) {
+        if (typeof value != "boolean") return 1;
+
+        let grid = this.getGrid("collision_"+collisionLayer);
+
+        if (!grid) return 2;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return 3;
+    
+        grid.setCell(tilePos.x, tilePos.y, value);
+    }
+
     setAllTileCollision(collisionLayer, tilePos, collisionsOnLayers /* array */) {throw Error("Not implemented")}
     getTileCollision(collisionLayer, tilePos) {throw Error("Not implemented")}
     getAllTileCollision(tilePos) {throw Error("Not implemented")} /* ret artray of layer collisions */
@@ -1408,7 +1418,7 @@ class TileMap extends Object2D {
 
     /**
      * Sets a navigation tile value on the specified navigation layer
-     * @param {Number} navLayer The number of a graphics layer
+     * @param {Number} navLayer The number of a navigation layer
      * @param {Vector} tilePos The tile position on the tilemap
      * @param {Number} travelCost The cost to travel through this tile (Higher values make this tile less visited)
      * This value can be any number, the ratio between tiles, is what matters. (generally 1 means a wall and 0 means a clear way)
@@ -1424,17 +1434,204 @@ class TileMap extends Object2D {
         grid.setCell(tilePos.x, tilePos.y, travelCost);
     }
 
+    /**
+     * Returns with the travel cost of a tile
+     * @param {Number} navLayer The number of a navigation layer
+     * @param {Vector} tilePos The tile position on the tilemap
+     * @returns {Number|null} The cost to travel through this tile, or null if the tile is invalid
+     */
     getTileNavigationAt(navLayer, tilePos) {
         let grid = this.getGrid("navigation_"+navLayer);
 
-        if (!grid) return;
-        if (!grid.isInGrid(tilePos.x, tilePos.y)) return;
+        if (!grid) return null;
+        if (!grid.isInGrid(tilePos.x, tilePos.y)) return null;
 
         return grid.getCell(tilePos.x, tilePos.y);
     }
 
-    /* {tiles: [Vector(0,0) ...], path: [Vector() ...]} returns array of tile pos + a world coord point list for path creation */
-    findPath(navLayer, startPos, endPos, algorithm = "astar") {throw Error("Not implemented")} 
+    /**
+     * Searches for a path between the 2 points
+     * @param {Number} navLayer The number of a navigation layer, to calculate travel cost on
+     * @param {Vector} startPos A tile position on the tilemap
+     * @param {Vector} endPos A tile position on the tilemap
+     * @param {String} algorithm The pathfinding algorithm. Possible values:
+     * - "astar" For A* pathfinding
+     * @returns {Object|null} If no path if found between the 2 points, this function will return null.
+     * Otherwise it will return an Object with the following structure:  
+     * {"tiles": [], "points": []}
+     * Where the tiles array is a list of tile coordinates the found path goes through and the points array is an array of world space points
+     * along the path
+     */
+    findPath(navLayer, startPos, endPos, algorithm = "astar") {
+        /*
+        function reconstruct_path(cameFrom, current)
+        total_path := {current}
+        while current in cameFrom.Keys:
+            current := cameFrom[current]
+            total_path.prepend(current)
+        return total_path
+
+        // A* finds a path from start to goal.
+        // h is the heuristic function. h(n) estimates the cost to reach goal from node n.
+        function A_Star(start, goal, h)
+            // The set of discovered nodes that may need to be (re-)expanded.
+            // Initially, only the start node is known.
+            // This is usually implemented as a min-heap or priority queue rather than a hash-set.
+            openSet := {start}
+
+            // For node n, cameFrom[n] is the node immediately preceding it on the cheapest path from the start
+            // to n currently known.
+            cameFrom := an empty map
+
+            // For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
+            gScore := map with default value of Infinity
+            gScore[start] := 0
+
+            // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
+            // how cheap a path could be from start to finish if it goes through n.
+            fScore := map with default value of Infinity
+            fScore[start] := h(start)
+
+            while openSet is not empty
+                // This operation can occur in O(Log(N)) time if openSet is a min-heap or a priority queue
+                current := the node in openSet having the lowest fScore[] value
+                if current = goal
+                    return reconstruct_path(cameFrom, current)
+
+                openSet.Remove(current)
+                for each neighbor of current
+                    // d(current,neighbor) is the weight of the edge from current to neighbor
+                    // tentative_gScore is the distance from start to the neighbor through current
+                    tentative_gScore := gScore[current] + d(current, neighbor)
+                    if tentative_gScore < gScore[neighbor]
+                        // This path to neighbor is better than any previous one. Record it!
+                        cameFrom[neighbor] := current
+                        gScore[neighbor] := tentative_gScore
+                        fScore[neighbor] := tentative_gScore + h(neighbor)
+                        if neighbor not in openSet
+                            openSet.add(neighbor)
+
+            // Open set is empty but goal was never reached
+            return failure
+        */
+
+        // Helper
+        function posToString(tilePos) {
+            return `${tilePos.x};${tilePos.y}`;
+        }
+
+        function stringToPos(string) {
+            return new Vector(parseInt(string.split(";")[0]), parseInt(string.split(";")[1]));
+        }
+
+        function generatePath(cameFrom, current) {
+            console.log("Generated!", cameFrom, current);
+            let tiles = [current];
+            let points = [current];
+
+            current = posToString(current);
+
+            let visited = new Set();
+
+            while (current in cameFrom) {
+                if (visited.has(current)) return new Path([new Vector(), new Vector(1)]);
+                let old = current;
+                current = cameFrom[current];
+                points.unshift(current);
+                tiles.unshift(current);
+                visited.add(old);
+                current = posToString(current);
+            }
+
+            return new Path(points);
+        }
+
+        function heuristics(tilePos) {
+            return Math.sqrt(Math.pow(Math.abs(endPos.x - tilePos.x), 2) + Math.pow(Math.abs(endPos.y - tilePos.y), 2)) / 2;
+        }
+
+        let cameFrom = {};
+        let tilesToCheck = [posToString(startPos)];
+
+        let gScore = {}
+        gScore[posToString(startPos)] = 0;
+
+        let fScore = {}
+        fScore[posToString(startPos)] = heuristics(startPos);
+
+        let neighbors = [
+            new Vector(0, -1), // top
+            new Vector(1, 0), // right
+            new Vector(0, 1), // bottom
+            new Vector(-1, 0), // left
+        ];
+
+        // Max iter number
+        let iter = 10000;
+
+        while (tilesToCheck.length && iter-- > 0) {
+            // Lowest FScore value
+            let lowesF = tilesToCheck[0];
+
+            for (let key in fScore) {
+                if (fScore[key] < fScore[lowesF]) lowesF = key;
+            }
+
+            //console.log(iter, lowesF);
+
+            // Current tile is the one with the lowest FScore value
+            let currentTilePos = stringToPos(lowesF);
+
+            if (currentTilePos.isEqual(endPos)) return generatePath(cameFrom, currentTilePos);
+
+            delete fScore[lowesF];
+            tilesToCheck = tilesToCheck.filter(t => t != lowesF);
+
+            // For each neighbor
+            /*
+             // d(current,neighbor) is the weight of the edge from current to neighbor
+                    // tentative_gScore is the distance from start to the neighbor through current
+                    tentative_gScore := gScore[current] + d(current, neighbor)
+                    if tentative_gScore < gScore[neighbor]
+                        // This path to neighbor is better than any previous one. Record it!
+                        cameFrom[neighbor] := current
+                        gScore[neighbor] := tentative_gScore
+                        fScore[neighbor] := tentative_gScore + h(neighbor)
+                        if neighbor not in openSet
+                            openSet.add(neighbor)
+            
+            */
+
+            for (let neighborOffset of neighbors) {
+                let neighborPos = currentTilePos.add(neighborOffset);
+
+                // Color visited tiles
+                this.setTileCollisionAt(0, neighborPos, true);
+
+                let neighborTravelCost = this.getTileNavigationAt(navLayer, neighborPos);
+                if (neighborTravelCost === null) continue; // Ignore tile outside of the map
+
+                let tentative_neigborScore = (gScore[posToString(currentTilePos)] ?? Infinity) + neighborTravelCost;
+                //console.log(neighborPos, neighborTravelCost, tentative_neigborScore, gScore[posToString(neighborPos)] ?? Infinity);
+
+                if (tentative_neigborScore < (gScore[posToString(neighborPos)] ?? Infinity)) {
+                    // Create backtrack link
+                    cameFrom[posToString(neighborPos)] = currentTilePos;
+
+                    gScore[posToString(neighborPos)] = tentative_neigborScore;
+                    fScore[posToString(neighborPos)] = tentative_neigborScore + heuristics(neighborPos);
+
+                    let nPos = posToString(neighborPos);
+                    if (!tilesToCheck.includes(nPos)) tilesToCheck.push(nPos);
+                }
+            }
+
+        }
+
+        console.log("Fail", tilesToCheck, iter);
+
+        return new Path([startPos, endPos]);
+    } 
 
     _updateCollision(collisionLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes collision layers */
     _updateNavigation(navLayer /* null to update all layers */) {throw Error("Not implemented")} /* greedy meshes nav layers */

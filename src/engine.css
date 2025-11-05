@@ -217,8 +217,6 @@ div#ui {
 }
 
 #loading_bar {
-
-
     height: 20px;
     width: 50vw;
 
@@ -249,7 +247,7 @@ div#ui {
 
     background-size: 64px 64px;
 
-    animation: bar-scroll 1s linear infinite;
+    animation: bar-scroll 0.5s linear infinite;
 
     transition: width 0.5s;
 }
@@ -261,15 +259,5 @@ div#ui {
 
     100% {
         background-position-x: 64px;
-    }
-}
-
-@keyframes bar-move-out {
-    0% {
-        transform: translateY(0%);
-    }
-
-    0% {
-        transform: translateY(100%);
     }
 }
