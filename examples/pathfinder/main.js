@@ -11,7 +11,7 @@ let following = false;
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(20);
+const GRID_SIZE = new Vector(100);
 let collapsedTiles = 0;
 let DONE = false;
 let ATTEMPTS = 0;
@@ -117,10 +117,10 @@ class Character extends AnimatedSprite {
     }
 
     render() {
+        if (settings.debug?.path) this.path.render();
+
         this.shadow.render();
         super.render();
-
-        if (settings.debug?.path) this.path.render();
 
         if (settings.debug?.boxes) {
             this.collider.render();

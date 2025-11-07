@@ -642,22 +642,35 @@ class Texture extends BaseResource {
 
         // Rendering parameters
         let imageRenderData = [
-            Math.floor(-imageWidth/2 + margin/2), // x
-            Math.floor(-imageHeight/2 + margin/2), // y
-            Math.ceil(imageWidth - margin), // width
-            Math.ceil(imageHeight - margin), // height
+            -imageWidth/2 + margin/2, // x
+            -imageHeight/2 + margin/2, // y
+            imageWidth - margin, // width
+            imageHeight - margin, // height
         ];
 
+        // Round coodrinates on pixel perfect canvas
+        if (c.isPixelPerfect) {
+            imageRenderData[0] = Math.round(imageRenderData[0]);
+            imageRenderData[1] = Math.round(imageRenderData[1]);
+            imageRenderData[2] = Math.ceil(imageRenderData[2]);
+            imageRenderData[3] = Math.ceil(imageRenderData[3]);
+        }
+
         // Screen space culling
-        if (
-            (imageRenderData[0] + imageRenderData[2] < 0 || imageRenderData[0] > c.width) &&
-            (imageRenderData[1] + imageRenderData[3] < 0 || imageRenderData[1] > c.height)
-        ) return;
+        /*if (
+            x + imageRenderData[2] < 0 || x + imageRenderData[0] > c.width ||
+            y + imageRenderData[3] < 0 || y + imageRenderData[1] > c.height
+        ) return;*/
 
-
+        // Flipped images
         if (this.flipV) {
             imageRenderData[0] += imageRenderData[2];
             imageRenderData[2] *= -1;
+        }
+
+        if (this.flipH) {
+            imageRenderData[1] += imageRenderData[3];
+            imageRenderData[3] *= -1;
         }
 
         /*ctx.save();
