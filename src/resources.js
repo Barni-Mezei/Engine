@@ -642,11 +642,18 @@ class Texture extends BaseResource {
 
         // Rendering parameters
         let imageRenderData = [
-            -imageWidth/2 + margin/2, // x
-            -imageHeight/2 + margin/2, // y
-            imageWidth - margin, // width
-            imageHeight - margin, // height
+            Math.floor(-imageWidth/2 + margin/2), // x
+            Math.floor(-imageHeight/2 + margin/2), // y
+            Math.ceil(imageWidth - margin), // width
+            Math.ceil(imageHeight - margin), // height
         ];
+
+        // Screen space culling
+        if (
+            (imageRenderData[0] + imageRenderData[2] < 0 || imageRenderData[0] > c.width) &&
+            (imageRenderData[1] + imageRenderData[3] < 0 || imageRenderData[1] > c.height)
+        ) return;
+
 
         if (this.flipV) {
             imageRenderData[0] += imageRenderData[2];

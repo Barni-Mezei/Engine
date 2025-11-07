@@ -2,17 +2,17 @@
 let tilemap;
 
 let editorPos = new Vector(); // World coordinate
+let cameraOffset = new Vector();
 let cursorPos = new Vector(); // Snapped world space coordinate
 let tilePos = new Vector(); // Tilemap tile coordinate
 
-let characters = [];
-
-let spawnPos = new Vector(-1);
-let goalPos = new Vector(-1);
+let player;
+let following = false;
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(50);
+const GRID_SIZE = new Vector(20);
+let collapsedTiles = 0;
 let DONE = false;
 let ATTEMPTS = 0;
 
@@ -22,11 +22,10 @@ function fitToView() {
     camera.zoom = (Math.min(c.width, c.height) / Math.max(tilemap.size.x, tilemap.size.y)) * 0.9;
 }
 
-
 class Character extends AnimatedSprite {
     static ID = 0;
 
-    speed;
+    speedScale = 0.25;
 
     path;
     agent;
@@ -44,25 +43,27 @@ class Character extends AnimatedSprite {
             "jump": new Texture("player_jump"),
         }
 
-        super(startPos, new Vector(100), animations);
+        super(startPos, new Vector(50), animations);
 
-        this.origin.y = 100;
-        this.origin.x = 50;
+        this.origin.y = 50;
+        this.origin.x = 25;
 
         this.agent = new PathFollow(4);
         this.path = new Path([startPos, startPos]);
         this.agent.setPath(this.path);
 
-        this.name = new Label2D(`E ${++Character.ID}`);
+        this.name = new Label2D(`Sir montington the III`);
         this.name.setSize(16);
 
-        this.collider = new ColliderAABB(this.pos, new Vector(50, 75), new Vector(25, 25));
+        this.collider = new ColliderAABB(this.pos, new Vector(25, 32), new Vector(12.5, 20));
 
-        this.shadow = new Texture("shadow");
+        this.shadow = new AnimatedSprite(new Vector(), new Vector(50), {
+            "idle": new Texture("shadow"),
+            "walk": new Texture("shadow_walk"),
+        });
 
         this.play("idle");
-
-        this.speed = randFloat(2, 5);
+        this.shadow.play("idle");
 
         // Set initial position
         this.update();
@@ -72,7 +73,7 @@ class Character extends AnimatedSprite {
         let tileSpacePos = this.pos.add(this.origin).sub(tilemap.tileSize.mult(0.5));
         let tileBelow = tileSpacePos.mult(1 / tilemap.tileWidth).round();
 
-        let foundPath = tilemap.findPath(0, tileBelow, tilePos, "astar");
+        let foundPath = tilemap.findPath(0, tileBelow, tilePos, "astar", settings.debug?.jitter);
 
         if (foundPath === null) return;
 
@@ -84,6 +85,7 @@ class Character extends AnimatedSprite {
         this.agent.finished = false;
 
         this.play("walk");
+        this.shadow.play("walk");
     }
 
     update(delta) {
@@ -92,20 +94,30 @@ class Character extends AnimatedSprite {
         this.pos = this.agent.pos.sub(this.origin);
         this.collider.setPos(this.pos);
 
-        this.name.setCenter( this.pos.add(new Vector(this.centerOffset.x, 0)) );
-        this.name.pos.y += 20;
+        this.name.setCenter( this.pos.add(new Vector(this.centerOffset.x, 20)) );
+        //this.name.pos.y += 20;
+
+        //camera.renderTexture(this.shadow, this.pos.x + (100/32)*0.5, this.pos.y + (100/32)*2, this.width, this.height);
+        this.shadow.setCenter( this.pos.add(new Vector(this.centerOffset.x + 1, 27)) );
+        this.shadow.update();
+
+        // Get position
+        let tileSpacePos = this.pos.add(this.origin).sub(tilemap.tileSize.mult(0.5));
+        let tileBelow = tileSpacePos.mult(1 / tilemap.tileWidth).round();
+
+        this.agent.speed = Math.max(1 - tilemap.getTileNavigationAt(0, tileBelow), 0.25) * this.speedScale * delta;
 
         if (this.agent.finished) {
             this.play("idle");
+            this.shadow.play("idle");
             return;
         }
 
-        this.agent.speed = delta * this.speed * 0.1;
         this.agent.update(delta);
     }
 
     render() {
-        camera.renderTexture(this.shadow, this.pos.x + (100/32)*0.5, this.pos.y + (100/32)*2, this.width, this.height);
+        this.shadow.render();
         super.render();
 
         if (settings.debug?.path) this.path.render();
@@ -164,18 +176,18 @@ function init() {
     let iota = 0;
     addTileRotated(iota++, "water",              ["www", "www", "www", "www"], 10, 1);
     addTileRotated(iota++, "forest",             ["fff", "fff", "fff", "fff"], 10, 1);
-    addTileRotated(iota++, "grass",              ["ggg", "ggg", "ggg", "ggg"], 10, 0.5);
-    addTileRotated(iota++, "path_crossing",      ["gpg", "gpg", "gpg", "gpg"], 8,  0);
-    addTileRotated(iota++, "shore",              ["wsg", "ggg", "gsw", "www"], 7,  0.5);
-    addTileRotated(iota++, "water_corner",       ["wsg", "ggg", "ggg", "gsw"], 7,  0.95);
-    addTileRotated(iota++, "island_corner",      ["wsg", "gsw", "www", "www"], 6,  0.95);
-    addTileRotated(iota++, "forest_edge",        ["fmg", "ggg", "gmf", "fff"], 7,  0.85);
-    addTileRotated(iota++, "corner_forest_edge", ["fmg", "ggg", "ggg", "gmf"], 7,  0.85);
-    addTileRotated(iota++, "clearing_corner",    ["fmg", "gmf", "fff", "fff"], 6,  0.95);
-    addTileRotated(iota++, "staright_path",      ["gpg", "ggg", "gpg", "ggg"], 8,  0);
-    addTileRotated(iota++, "corner_path",        ["gpg", "gpg", "ggg", "ggg"], 8,  0);
-    addTileRotated(iota++, "path_junction",      ["gpg", "gpg", "ggg", "gpg"], 8,  0);
-    addTileRotated(iota++, "square",             ["gpg", "ggg", "ggg", "ggg"], 8,  0);
+    addTileRotated(iota++, "grass",              ["ggg", "ggg", "ggg", "ggg"], 20, 0.25);
+    addTileRotated(iota++, "path_crossing",      ["gpg", "gpg", "gpg", "gpg"], 1,  0);
+    addTileRotated(iota++, "shore",              ["wsg", "ggg", "gsw", "www"], 3,  0.5);
+    addTileRotated(iota++, "water_corner",       ["wsg", "ggg", "ggg", "gsw"], 3,  0.95);
+    addTileRotated(iota++, "island_corner",      ["wsg", "gsw", "www", "www"], 2,  0.95);
+    addTileRotated(iota++, "forest_edge",        ["fmg", "ggg", "gmf", "fff"], 3,  0.85);
+    addTileRotated(iota++, "corner_forest_edge", ["fmg", "ggg", "ggg", "gmf"], 3,  0.85);
+    addTileRotated(iota++, "clearing_corner",    ["fmg", "gmf", "fff", "fff"], 2,  0.95);
+    addTileRotated(iota++, "staright_path",      ["gpg", "ggg", "gpg", "ggg"], 2,  0);
+    addTileRotated(iota++, "corner_path",        ["gpg", "gpg", "ggg", "ggg"], 2,  0);
+    addTileRotated(iota++, "path_junction",      ["gpg", "gpg", "ggg", "gpg"], 1,  0);
+    addTileRotated(iota++, "square",             ["gpg", "ggg", "ggg", "ggg"], 1,  0);
 
     addTileRotated(iota++, "error",              ["xxx", "yxx", "xyx", "yyx"], 1,  1);
 
@@ -187,7 +199,14 @@ function init() {
     eraseGrid();
 
     // Initialise camera
+    camera.settings.minZoom = 0.01;
+
+    // Spawn the player randomly
+    player = new Character(tilemap.tileCenterToWorld(new Vector(randInt(0, tilemap.width), randInt(0, tilemap.height))));
+
     fitToView();
+
+    cameraOffset = player.origin;
 }
 
 function generationDone() {
@@ -216,7 +235,11 @@ function update(delta) {
         editorPos.x += movementSpeed;
     }
 
-    if (input.mouse.left) {
+    if (input.mouse.middle) {
+        /*if (following && !input.mouse.oldMiddle) {
+            editorPos = camera.realPos;
+        }*/
+        following = false;
         editorPos = editorPos.add( new Vector(input.mouse.prevX - input.mouse.x, input.mouse.prevY - input.mouse.y).mult(1 / camera.realZoom) );
     }
 
@@ -232,12 +255,19 @@ function update(delta) {
         if (camera.zoom > camera.settings.minZoom) editorPos = camera.c2w(Vector.fromObject(input.mouse).sub(c.center).mult(-0.11).add(c.center));
     }
 
+    // Center map on screen
     if (isKeyPressed("f")) {
+        following = false;
         fitToView();
     }
 
     camera.clampValues();
-    camera.lookAt(editorPos, true);
+    if (following) {
+        editorPos = Vector.lerp(editorPos, player.pos, 0.1);
+        camera.lookAt(editorPos.add(cameraOffset), true);
+    } else {
+        camera.lookAt(editorPos, true);
+    }
     camera.update();
 
     // Cursor and tile position
@@ -248,46 +278,46 @@ function update(delta) {
 
     // Tilemap updating functions
     if (input.mouse.right) {
-        eraseSection(tilePos.x, tilePos.y, 5, 5);
+        eraseSection(tilePos.x, tilePos.y, 9, 9);
         DONE = false;
     }
 
     // Generating
     if (!DONE) {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < settings.debug?.iter ?? 1; i++) {
             iterate();
         }
     }
 
     // Pathfinding
-    if (isKeyJustPressed("q")) {
-        let newCharacter = new Character(tilePos.mult(tilemap.tileSize).add(tilemap.tileSize.mult(0.5)));
-        
-        characters.push(newCharacter);
-    }
+    if (input.mouse.left) {
+        if (tilemap.getGrid("graphics_0").isInGrid(tilePos.x, tilePos.y)) {
+            // Erase visited tiles
+            tilemap.map("collision_0", function (x, y, cell) {return false});
 
-    if (isKeyJustPressed("e")) {
-        for (let char of characters) {
-            char.setGoal(tilePos);
+            player.setGoal(tilePos);
         }
     }
 
     if (isKeyJustPressed("space")) {
-        // Erase visited tiles
-        tilemap.map("collision_0", function (x, y, cell) {return false});
+        if (!following) {
+            // Focused on the player
+            camera.zoom = 2;
+        }
+
+        following = !following;
+
+
     }
 
-    for (let char of characters) {
-        char.update(delta);
-    }
-
+    player.update(delta);
 }
 
 function render(delta) {
     ctx.clearRect(0, 0, c.width, c.height);
 
     //tilemap.render("#44444488", camera.w2csX(2), false, true);
-    tilemap.render("#4448", 2, settings.debug?.coll, settings.debug?.travel);
+    tilemap.render(null, null, settings.debug?.coll, settings.debug?.travel);
 
     // Current hovered tile
     if (currentTileId != null) {
@@ -297,9 +327,7 @@ function render(delta) {
         );
     }
 
-    for (let char of characters) {
-        char.render(delta);
-    }
+    player.render(delta);
 
     // Tile cursor
     ctx.strokeStyle = "#00ddff";
@@ -308,8 +336,10 @@ function render(delta) {
     ctx.arc(...camera.w2c(cursorPos.add(tilemap.tileSize.mult(0.5))).toArray(), camera.w2csX(tilemap.tileWidth*0.5), 0, Math.PI*2);
     ctx.stroke()
 
-    document.getElementById("text").innerText += `Attempts: ${ATTEMPTS}` + "\n";
+    let precent = round((collapsedTiles / (GRID_SIZE.x * GRID_SIZE.y)) * 100, 2);
+
+    document.getElementById("text").innerText += `Progress: ${collapsedTiles}/${GRID_SIZE.x * GRID_SIZE.y} ${precent}%` + "\n";
+    document.getElementById("text").innerText += `Misplaces: ${ATTEMPTS}` + "\n";
     document.getElementById("text").innerText += `Cursor: ${tilePos.x};${tilePos.y}` + "\n";
     document.getElementById("text").innerText += `Current tile: ${currentTileId}` + "\n";
-    document.getElementById("text").innerText += `Entropy: ${tilemap.getTileNavigationAt(0, tilePos)}` + "\n";
 }

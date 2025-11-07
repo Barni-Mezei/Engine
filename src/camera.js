@@ -117,16 +117,27 @@ class Camera {
         if (instant) this.#realPos = this.pos;
     }
 
+    /**
+     * Clamps the value of the camera's yom level in to its allowed range
+     */
     clampValues() {
         this.#realZoom = clamp(this.#realZoom, this.settings.minZoom, this.settings.maxZoom);
         this.zoom = clamp(this.zoom, this.settings.minZoom, this.settings.maxZoom);
     }
 
-    update() {
+    /**
+     * Synchronises the camera's real zoom level and position to the target zoom level and position
+     */
+    sync() {
+        this.#realPos = this.pos;
+        this.#realZoom = this.zoom;
+    }
+
+    update(delta) {
         if (this.settings.zoomSpeed == -1) {
             this.#realZoom = this.zoom;
         } else {
-            this.#realZoom = lerp(this.#realZoom, this.zoom, this.settings.zoomSpeed);
+            this.#realZoom = lerp(this.#realZoom, this.zoom, this.settings.zoomSpeed * delta);
         }
 
         if (this.settings.glideSpeed == -1) {

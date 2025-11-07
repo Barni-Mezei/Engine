@@ -107,7 +107,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y - 1)) {
             let top = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, topTilePos).possible) {
-                top = [...top, ...getAllowedTiles(possibleValue, 2)];
+                top = top.concat(getAllowedTiles(possibleValue, 2));
             }
             let oldSize = allowedTiles.size;
 
@@ -125,7 +125,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x + 1, currrentTilePos.y)) {
             let right = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, rightTilePos).possible) {
-                right = [...right, ...getAllowedTiles(possibleValue, 3)];
+                right = right.concat(getAllowedTiles(possibleValue, 3));
             }
             let oldSize = allowedTiles.size;
             
@@ -144,7 +144,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x, currrentTilePos.y + 1)) {
             let bottom = [];
             for (let possibleValue of tilemap.getTileMetaAt(0, bottomTilePos).possible) {
-                bottom = [...bottom, ...getAllowedTiles(possibleValue, 0)];
+                bottom = bottom.concat(getAllowedTiles(possibleValue, 0));
             }
             let oldSize = allowedTiles.size;
             
@@ -163,7 +163,7 @@ function updateEntropy(x, y) {
         if (grid.isInGrid(currrentTilePos.x - 1, currrentTilePos.y)) {
             let left = [];
             for (let possibleValue of tilemap.getTileMetaAt(0,leftTilePos).possible) {
-                left = [...left, ...getAllowedTiles(possibleValue, 1)];
+                left = left.concat(getAllowedTiles(possibleValue, 1));
             }
 
             let oldSize = allowedTiles.size;
@@ -202,6 +202,8 @@ function iterate() {
         });
     });
 
+    collapsedTiles = (GRID_SIZE.x * GRID_SIZE.y) - cells.length;
+
     if (cells.length == 0) {
         DONE = true;
         console.log("%cDone!", "font-size: 20px; color: #66ff00;");
@@ -228,7 +230,7 @@ function iterate() {
     if (possibleValues.length == 0) {
         ATTEMPTS++;
 
-        eraseSection(lowestEntropyCell.pos.x, lowestEntropyCell.pos.y, 5, 5);
+        eraseSection(lowestEntropyCell.pos.x, lowestEntropyCell.pos.y, 3, 3);
 
         return;
     }

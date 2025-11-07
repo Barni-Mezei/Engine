@@ -1464,13 +1464,16 @@ class TileMap extends Object2D {
      * @param {Vector} endPos A tile position on the tilemap
      * @param {String} algorithm The pathfinding algorithm. Possible values:
      * - "astar" For A* pathfinding
+     * @param {Number} jitter This vlaue "randomises" the path. 0 means that from the same start and end points, the path will be the same.
+     * Any value higher makes the path choose different routes, but stiull respecting the travel cost of each cell
+     * (values 5 or higher, usually leads to the path going wherever it wnats)
      * @returns {Object|null} If no path if found between the 2 points, this function will return null.
      * Otherwise it will return an Object with the following structure:  
      * {"tiles": [], "points": []}
      * Where the tiles array is a list of tile coordinates the found path goes through and the points array is an array of world space points
      * along the path
      */
-    findPath(navLayer, startPos, endPos, algorithm = "astar") {
+    findPath(navLayer, startPos, endPos, algorithm = "astar", jitter = 0) {
         /*
         function reconstruct_path(cameFrom, current)
         total_path := {current}
@@ -1559,7 +1562,7 @@ class TileMap extends Object2D {
         }
 
         function heuristics(tilePos) {
-            return Math.sqrt(Math.pow(Math.abs(endPos.x - tilePos.x), 2) + Math.pow(Math.abs(endPos.y - tilePos.y), 2)) / 2 + randFloat(0, 2);
+            return Math.sqrt(Math.pow(Math.abs(endPos.x - tilePos.x), 2) + Math.pow(Math.abs(endPos.y - tilePos.y), 2)) / 2 + randFloat(0, jitter);
         }
 
         let cameFrom = {};

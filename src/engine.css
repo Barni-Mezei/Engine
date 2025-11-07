@@ -42,8 +42,14 @@ div#debug {
     top: 0px;
     left: 0px;
 
+    padding-right: 5px;
+    padding-bottom: 5px;
+
     width: fit-content;
     max-width: 50vw;
+
+    background-color: #0002;
+    border-bottom-right-radius: 5px;
 
     font-family: monospace;
     font-size: 14px;
@@ -77,13 +83,21 @@ div#debug .item:first-of-type {
 
 div#debug input {
     margin: 0px;
+    margin-left: 1em;
     padding: 0px;
 
     border: none;
     border-radius: 5px;
     outline: none;
+}
 
+div#debug input[type="number"],
+div#debug input[type="text"] {
+    background-color: transparent;
+    border-bottom: 1px solid #888;
+    border-radius: 0px;
 
+    max-width: 100px;
 }
 
 div#debug input:focus {

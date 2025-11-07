@@ -123,6 +123,9 @@ function addDebugOption(id, title, type, defaultValue, value) {
     switch (type) {
         case "bool":
             newOptionContainer.innerHTML += `<input id="${id}" type="checkbox"${defaultValue ? " checked" : ""}>`;
+            newOptionContainer.lastChild.onclick = function (e) {
+                e.target.blur();
+            }
             break;
 
         case "range":
