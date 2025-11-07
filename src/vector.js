@@ -142,6 +142,14 @@ class Vector {
     }
 
     /**
+     * Returns true if at least one of the vector's components are null or NaN or undefined
+     * @returns {Boolean} Is this vector null?
+     */
+    isNull() {
+        return this.x === null || this.y === null || this.x === NaN || this.y === NaN || this.x === undefined || this.y === undefined;
+    }
+
+    /**
      * Returns a copy of the vector
      * @returns {Vector} Returns a NEW VECTOR
      */

@@ -198,7 +198,7 @@ function generationDone() {
 
 function update(delta) {
     // Camera controls
-    let movementSpeed = clamp(5 / camera.realZoom, 5, 50);
+    let movementSpeed = clamp(2 / camera.realZoom, 5, 50) * delta * 0.2;
 
     if (isKeyPressed("w")) {
         editorPos.y -= movementSpeed;
@@ -287,7 +287,7 @@ function render(delta) {
     ctx.clearRect(0, 0, c.width, c.height);
 
     //tilemap.render("#44444488", camera.w2csX(2), false, true);
-    tilemap.render("#00000000", 0, settings.debug?.coll, settings.debug?.travel);
+    tilemap.render("#4448", 2, settings.debug?.coll, settings.debug?.travel);
 
     // Current hovered tile
     if (currentTileId != null) {

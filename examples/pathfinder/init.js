@@ -19,9 +19,9 @@ setKeybind("r", "r");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
-addDebugOption("travel", "Travel cost", "bool", true);
-addDebugOption("coll", "Pathfinding", "bool", true);
-addDebugOption("path", "Paths", "bool", true);
+addDebugOption("travel", "Travel cost", "bool", false);
+addDebugOption("coll", "Pathfinding", "bool", false);
+addDebugOption("path", "Paths", "bool", false);
 
 setDebugMenu(true);
 
