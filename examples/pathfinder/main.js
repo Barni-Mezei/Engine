@@ -236,9 +236,9 @@ function update(delta) {
     }
 
     if (input.mouse.middle) {
-        /*if (following && !input.mouse.oldMiddle) {
-            editorPos = camera.realPos;
-        }*/
+        if (following && !input.mouse.oldMiddle) {
+            editorPos = player.pos.sub(cameraOffset);
+        }
         following = false;
         editorPos = editorPos.add( new Vector(input.mouse.prevX - input.mouse.x, input.mouse.prevY - input.mouse.y).mult(1 / camera.realZoom) );
     }
@@ -300,9 +300,13 @@ function update(delta) {
     }
 
     if (isKeyJustPressed("space")) {
-        if (!following) {
+        if (following) {
+            // Focused on the map
+            editorPos = player.pos.add(cameraOffset);
+        } else {
             // Focused on the player
-            camera.zoom = 2;
+            camera.zoom = 2.15;
+
         }
 
         following = !following;

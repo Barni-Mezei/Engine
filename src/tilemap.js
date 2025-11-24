@@ -102,13 +102,13 @@ class SimpleTileMap extends Object2D {
         }
 
         // Complete atlas size
-        if (this.atlasData.rows == null) {
+        if (this.atlasData.rows === null) {
             this.atlasData.rows = (this.atlasTexture.image.height + this.atlasData.gapY) / (this.atlasData.tileHeight + this.atlasData.gapY);
             this.atlasData.columns = (this.atlasTexture.image.width + this.atlasData.gapX) / (this.atlasData.tileWidth + this.atlasData.gapX);
         }
 
         // Complete tile size
-        if (this.atlasData.tileWidth == null) {
+        if (this.atlasData.tileWidth === null) {
             this.atlasData.tileWidth = (this.atlasTexture.image.width + this.atlasData.gapX) / this.atlasData.columns;
             this.atlasData.tileHeight = (this.atlasTexture.image.height + this.atlasData.gapY) / this.atlasData.rows;
         }
@@ -300,7 +300,7 @@ class SimpleTileMap extends Object2D {
             let defaultTileId = SimpleTileMap._getTileIdFromCoords(tile.atlasPos.x, tile.atlasPos.y);
             if (tile.id == defaultTileId) continue;
 
-            if (tile.char == null) {
+            if (tile.char === null) {
                 // 8697 possible tile IDs (from chr: 33 '!' to chr: 126 '~')
                 tileChars[tileId] = String.fromCharCode(33 + Math.floor(i/93)) + String.fromCharCode(33 + (i % 93));
             } else {
@@ -489,7 +489,7 @@ class SimpleTileMap extends Object2D {
         let self = this;
 
         this.grid.forEach(function (x, y, tile) {
-            if (tile.id == null) return;
+            if (tile.id === null) return;
 
             let tilePos = self.pos.add(new Vector(x, y).mult(self.gridTileSize));
 
@@ -545,6 +545,7 @@ class SimpleTileMap extends Object2D {
  */
 class Tile {
     /**
+    Neighbor indexes are in a clockwise order:  
     - 0 top,
     - 1 top-right,
     - 2 right,
@@ -554,20 +555,22 @@ class Tile {
     - 6 left
     - 7 top-left,
 
-    Neighbor indexes are in a clockwise order:  
-        `7 0 1`  
-        `6   2`  
-        `5 4 3`  
+    `7 0 1`  
+    `6 . 2`  
+    `5 4 3`  
+
+    Edge values can be anything. Example:  
+    `autotile = {"terrain": [1, 0, 2, 0, 1, 0, 2, 0]}`
     */
-    autotile = [];
+    autotile = {};
 
     /**
      * The ID of the tile
      */
-    id = ""; // Tile name
+    id = "";
 
     /**
-     * Atlas coordinates
+     * Atlas coordinate
      */
     atlasPos = new Vector();
 
@@ -586,28 +589,60 @@ class Tile {
      */
     pattern;
 
+    /**
+     * @param {Texture} texture A texture instance
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {Vector} atlasPos 
+     */
     constructor(texture, tileId, atlasPos) {
         this.texture = texture;
         this.id = tileId;
         this.atlasPos = atlasPos;
 
         this.meta = {};
+        this.autotile = {};
 
         this.updatePattern();
     }
 
+    /**
+     * Generates a new canvas fill pattern from the tile's texture
+     */
     updatePattern() {
         this.pattern = ctx.createPattern(this.texture.image, "repeat");
     }
 
-    setAutotile(array) {
-        this.autotile = array;
+    /**
+     * Sets autotile rules for this tile, at the specified layer
+     * @param {String} layerId The ID of an autotile layer
+     * @param {Array} array An array of edge values
+     */
+    setAutotile(layerId, array) {
+        this.autotile[layerId] = array;
     }
 
+    /**
+     * Returns with the edge values of this tile at the specified autotile layer
+     * @param {String} layerId The ID of an autotile layer
+     * @returns {Array|null} The edge values for the specified layer or null if no layer was found
+     */
+    getAutotile(layerId) {
+        if (layerId === null) return this.autotile;
+        
+        if (layerId in this.autotile) return this.autotile[layerId];
+
+        return null;
+    }
+
+    /**
+     * Converts this object in to a json compatible one
+     * @returns {Object} Object representation of this tile
+     */
     toObject() {
         return {
             id: structuredClone(this.id),
             meta: structuredClone(this.meta),
+            autotile: structuredClone(this.autotile),
         }
     }
 
@@ -769,6 +804,15 @@ class TileMap extends Object2D {
      */
     tileCenterToWorld(tilePos) {
         return this.pos.add(tilePos.mult(this.#gridTileSize).add(this.#gridTileSize.mult(0.5)));
+    }
+
+    /**
+     * Returns with the tile under neath the specified position.
+     * @param {Vector} pos A world space coordinate, above the tilemap
+     * @returns {Vector} A tile position on the tilemap (might be out of bounds!)
+     */
+    worldToTileCenter(pos) {
+        return pos.mult(new Vector(1 / this.tileWidth, 1 / this.tileHeight)).round();
     }
 
     /**
@@ -1143,6 +1187,20 @@ class TileMap extends Object2D {
     }
 
     /**
+     * Adds a new tile to the tilemap's tileset
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} textureId The ID of a loaded resource
+     */
+    addTile(tileId, textureId) {
+        if (tileId in this.#tiles) return;
+
+        let newTile = new Tile(new Texture(textureId), tileId, new Vector(0, 0));
+
+        // Add new tile to the tileset
+        this.#tiles[tileId] = newTile;
+    }
+
+    /**
      * Changes a tile's ID to the specified one (WARNING: TileIDs on the tilemap, will not be updated, so you need to replace them with the new tile id)
      * @param {String} tileId The ID of a tile from the tileset
      * @param {String} newTileId The new ID of this tile in the tileset
@@ -1230,12 +1288,83 @@ class TileMap extends Object2D {
         return this.#tiles[ Object.keys(this.#tiles)[0] ];
     }
 
-    setTileAutotile(tileId, neighbors) {throw Error("Not implemented")}
-    setTileAutotileDirection(tileId, direction = "top", connectionID) {throw Error("Not implemented")} /* top top_right right bottom_right bottom bottom_left left top_left*/
-    setTileAutotileIndex(tileId, index, connectionID) {throw Error("Not implemented")}
-    getTileAutotile(tileId) {throw Error("Not implemented")}
+    /**
+     * Returns with an index of a direction
+     * @param {Number|String} direction A direction identifier. Can be a name, like: "top" or an index like: 1
+     * @returns {Number|null} A valid direction index (0-7) or null if the provided direction was invalid
+     */
+    _getAutotileDirectionIndex(direction) {
+        if (direction == direction + 0) {
+            // Direction is a number
+            if (direction < 0) return null;
+            if (direction > 7) return null;
+            return Math.round(direction);
+        } else {
+            // Direction is a string
+            return {
+                "top": 0,
+                "top-right": 1,
+                "right": 2,
+                "bottom-right": 3,
+                "bottom": 4,
+                "bottom-left": 5,
+                "left": 6,
+                "top-left": 7,
+            }[direction] ?? null;
+        }
+    }
 
-    getAutotile(tileID, neighbors) {throw Error("Not implemented")} /* [] connectionID or null if unknown returns a tile id*/
+    /**
+     * Assigns the autotile values to a tile
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} layerId The ID of an autotile tileset
+     * @param {Array} neighbors An array of connectionIDs
+     */
+    setTileAutotile(tileId, layerId, neighbors) {
+        let tile = this.getTileById(tileId);
+        if (tile === null) return;
+
+        tile.setAutotile(layerId, neighbors);
+    }
+    
+    /**
+     * Assigns a value for the side of the specified tile, on the specified autotile layer
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} layerId The ID of an autotile layer
+     * @param {Number|String} direction An edge direction
+     * @param {*} connectionID A connection's value (A value for the side of this tile. Can be anything)
+     */
+    setTileAutotileDirection(tileId, layerId, direction, connectionID) {
+        let tile = this.getTileById(tileId);
+        if (tile === null) return;
+
+        if (!(layerId in tile.autotile)) return;
+
+        tile.autotile[layerId][this._getAutotileDirectionIndex(direction)] = connectionID;
+    }
+
+    /**
+     * Returns with the autotile data of the given tile
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String|null} layerId The ID of an autotile layer (If not specified, then the full autotile data will be returned)
+     * @returns {Object|Array|null} The autotile data of the specified tile or null
+     */
+    getTileAutotile(tileId, layerId = null) {
+        let tile = this.getTileById(tileId);
+        if (tile === null) return null;
+
+        return tile.getAutotile(layerId);
+    }
+    
+    /**
+     * Returns with the possible connecting tiles in the same autotile tileset, for the given tile and the given edge
+     * @param {String} tileId The ID of a tile from the tileset
+     * @param {String} layerId The ID of an autotile layer
+     * @param {Number|String} direction An edge direction
+     * @returns {Array} An array of possible connecting tileIDs, from this tilemap's tileset
+     */
+    getAutotile(tileId, layerId, direction) {throw Error("Not implemented")}
+
 
     // Multi layer
     
@@ -1414,7 +1543,7 @@ class TileMap extends Object2D {
         for (let layerId of layerIds) {
             let grid = this.getGrid(layerId);
 
-            if (grid == null) continue;
+            if (grid === null) continue;
 
             // TODO: Get closest tiles and check for collision
         }
@@ -1677,7 +1806,6 @@ class TileMap extends Object2D {
 
         let self = this;
 
-        //console.log(this.getLayers());
         for (let layerId of this.getLayers("graphics")) {
             // Render tiles
             this.getGrid(layerId).forEach(function (x, y, tile) {
@@ -1687,8 +1815,6 @@ class TileMap extends Object2D {
                     self.pos.x + x * self.tileWidth,
                     self.pos.y + y * self.tileHeight
                 );
-
-                ctx.imageSmoothingEnabled = !c.isPixelPerfect;
 
                 /*ctx.drawImage(
                     self.getTileById(tile.id).texture,

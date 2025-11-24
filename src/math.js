@@ -75,6 +75,18 @@ function round(value, precision = 2) {
 }
 
 /**
+ * Snaps ("rounds") a number to the nearest multiple of the specified step. Example:  
+ * 5, step: 2 => 6
+ * 12, step: 5 => 10
+ * @param {Number} value The number to be rounded
+ * @param {Number} step The value of a step to snap to
+ * @returns {Number} The input number rounded to the nearest step
+ */
+function cround(value, step = 5) {
+    return Math.round(value / step) * step;
+}
+
+/**
  * Makes a number non-repeating, rounding it to the nearest non-repeating floating point value
  * @param {Number} value The number to be made non-repeating
  * @returns {Number} The input value, but as a non-repeating float

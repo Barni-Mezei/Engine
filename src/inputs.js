@@ -320,8 +320,7 @@ function isKeyPressed(bindName) {
  */
 function isKeyJustPressed(bindName) {
     if (!(bindName in input.controls)) {
-        console.error(`Unknown keybind '${bindName}'`);
-        return false;
+        throw Error(`Unknown keybind '${bindName}'`);
     }
 
     return _testKeyId(input.controls[bindName], input.keys.justPressed);

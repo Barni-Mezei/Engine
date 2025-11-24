@@ -51,7 +51,7 @@ class Vector {
 
     /**
      * Creates a NEW VECTOR from an existing, non-Vector object (an array, 0: x, 1: y) 
-     * @param {Array<Number>} a An array with min. 2 items.
+     * @param {Array} a An array with min. 2 items, both numbers
      */
     static fromArray(a) {
         return new Vector(a[0], a[1]);
@@ -61,9 +61,9 @@ class Vector {
      * Creates a new unit vector pointing in the specified direction
      * @param {Number} angle Direction of the vector in DEGREES (The 0°-> is to the right, and increases CW)
      * @param {Number} length Length of the vector
-     * @returns {Vector}
+     * @returns {Vector} Returns a NEW VECTOR
      */
-    static fromAngle(angle, length) {
+    static fromAngle(angle, length = 1) {
         return new Vector(cos(angle), sin(angle)).mult(length);
     }
 
@@ -92,7 +92,7 @@ class Vector {
      * @param {Vector} v1 Base vector
      * @param {Vector} v2 Target vector
      * @param {Number} amount The amount to match v2. This value must be in the range: [0, 1]
-     * @returns {Vector}
+     * @returns {Vector} Returns a NEW VECTOR
      */
     static lerp(v1, v2, amount = 0.9) {
         return new Vector(lerp(v1.x, v2.x, amount), lerp(v1.y, v2.y, amount));
@@ -100,15 +100,15 @@ class Vector {
 
     /**
      * Converts the vector to an array, with the following form: [x, y]
-     * @returns {Array}
+     * @returns {Array} Returns with an array of 2 numbers
      */
     toArray() {
         return [this.x, this.y];
     }
 
     /**
-     * Converts the vector to an object, with the following form: {x, y}
-     * @returns {Object}
+     * Converts the vector to an object, with the following format: {x, y}
+     * @returns {Object} Returns an object with an "x" and a "y" key
      */
     toObject() {
         return {x: this.x, y: this.y};

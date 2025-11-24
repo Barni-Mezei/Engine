@@ -448,6 +448,12 @@ class Texture extends BaseResource {
 
         if (this.isAnimated) {
             this.animData.wrap = 0;
+            this.cropData = {
+                x: 0,
+                y: 0,
+                width: 16,
+                height: 16,
+            }
         } else {
             this.cropData = null;
         }
@@ -657,13 +663,13 @@ class Texture extends BaseResource {
         }
 
         // Screen space culling
-        /*if (
+        if (
             x + imageRenderData[2] < 0 || x + imageRenderData[0] > c.width ||
             y + imageRenderData[3] < 0 || y + imageRenderData[1] > c.height
-        ) return;*/
+        ) return;
 
         // Flipped images
-        if (this.flipV) {
+        /*if (this.flipV) {
             imageRenderData[0] += imageRenderData[2];
             imageRenderData[2] *= -1;
         }
@@ -671,7 +677,7 @@ class Texture extends BaseResource {
         if (this.flipH) {
             imageRenderData[1] += imageRenderData[3];
             imageRenderData[3] *= -1;
-        }
+        }*/
 
         /*ctx.save();
         
@@ -685,13 +691,13 @@ class Texture extends BaseResource {
         ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
 
         ctx.restore();*/
-
+        
         ctx.save();
         
         // Apply rotation
         ctx.rotate(rotation * (Math.PI / 180));
         ctx.translate(x + imageWidth / 2, y + imageHeight / 2);
-
+        
         // Draw cropped image
         ctx.imageSmoothingEnabled = !c.isPixelPerfect;
         ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
