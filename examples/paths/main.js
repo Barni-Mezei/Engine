@@ -57,6 +57,8 @@ class Soldier extends AnimatedSprite {
         super.render();
 
         if (settings.debug?.boxes) {
+            ctx.lineWidth = camera.w2csX(4);
+
             ctx.strokeStyle = "#ff0000";
             ctx.beginPath();
             ctx.moveTo(...camera.w2cXY(this.left, this.top));
@@ -123,25 +125,83 @@ async function init() {
     }
 }
 
+function update(delta) {
+    // Re-assign taget
+    if (input.mouse.left) {
+        for (let index in paths) {
+            let path = paths[index];
+            let point = Vector.fromAngle(positions[index].angle + formationRotation, positions[index].length);
+            
+            path.removePointFromStart();
+            path.removePointFromEnd();
+            path.addPointAtStart(soldiers[index].pos);
+            path.addPointAtEnd(camera.c2w(Vector.fromObject(input.mouse)).add(point).sub(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset)));
+            soldiers[index].agent.lastPointIndex = 0;
+        }
+    }
+
+    if (isKeyPressed("space")) {
+        paths.forEach((p, index) => {
+            p.removePointFromStart();
+            p.removePointFromEnd();
+            p.addPointAtStart(soldiers[index].pos);
+            p.addPointAtEnd( new Vector(
+                (c.width/2 - 100) / camera.realZoom * randFloat(-1, 1),
+                (c.height/2 - 100) / camera.realZoom * randFloat(-1, 1),
+            ));
+            soldiers[index].agent.lastPointIndex = 0;
+        });
+    }
+
+    if (isKeyPressed("a")) formationRotation -= 2;
+    if (isKeyPressed("d")) formationRotation += 2;
+
+    if (isKeyPressed("w")) {
+        for (let s of soldiers) s.agent.speed += 1;
+    };
+    if (isKeyPressed("s")) {
+        for (let s of soldiers) s.agent.speed -= 1;
+    };
+
+    if (isKeyPressed("add")) camera.zoom += camera.zoom * 0.01 * delta;
+    if (isKeyPressed("sub")) camera.zoom -= camera.zoom * 0.01 * delta;
+    camera.clampValues();
+
+    if (isKeyPressed("left")) camera.pos.x -= 10 / camera.realZoom;
+    if (isKeyPressed("right")) camera.pos.x += 10 / camera.realZoom;
+    if (isKeyPressed("up")) camera.pos.y -= 10 / camera.realZoom;
+    if (isKeyPressed("down")) camera.pos.y += 10 / camera.realZoom;
+
+    if (isKeyPressed("q")) camera.pos = new Vector();
+
+    for (let p of paths) p.update();
+    for (let s of soldiers) s.update();
+
+    camera.lookAt(new Vector(0, 0), true);
+    camera.update(delta);
+
+}
+
 function render() {
     ctx.clearRect(0, 0, c.width, c.height);
 
-    /*paths.forEach(p => {
-        p.render();
-    });*/
+    if (settings.debug?.paths) {
+        for (let p of paths) p.render();
+    }
 
     // Draw mouse positions
-    positions.forEach(p => {
-        let offset = Vector.fromAngle(p.angle + formationRotation, p.length);
-        let mPos = Vector.fromObject(input.mouse);
-        pointpos = camera.w2c(offset).add(Vector.fromObject(input.mouse));
+    ctx.fillStyle = "#ffffff22";
+    for (let index in positions) {
+        let point = positions[index];
+        let offset = Vector.fromAngle(point.angle + formationRotation, point.length);
+        let pointpos = camera.w2c(camera.c2w(input.mouse.pos).add(offset));
 
-        ctx.fillStyle = "#ffffff22";
         ctx.beginPath();
         ctx.arc(...pointpos.toArray(), camera.w2csX(10), 0, Math.PI * 2);
         ctx.fill();
-    });
+    }
 
+    // Draw formation direction arrow
     let arrowPoints = {
         bottom: [0,   -20],
         top:    [0,   -100],
@@ -152,7 +212,8 @@ function render() {
     for (let key in arrowPoints) {
         let point = pol(arrowPoints[key][0], arrowPoints[key][1]);
         point = rec(point.angle + formationRotation, point.length);
-        arrowPoints[key] = [...camera.w2c(Vector.fromObject(point)).add(Vector.fromObject(input.mouse)).toArray()];
+
+        arrowPoints[key] = [...camera.w2c(camera.c2w(input.mouse.pos).add(Vector.fromObject(point))).toArray()];
     }
 
     ctx.strokeStyle = "#ffffff22";
@@ -167,83 +228,24 @@ function render() {
     ctx.stroke();
 
     // Draw target positions
-    paths.forEach((p, index) => {
-        let targetpoint = p.points[p.points.length - 1].add(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset));
-
+    ctx.fillStyle = "#00ddff88";
+    for (let index in paths) {
+        let path = paths[index];
+        let targetpoint = path.points[path.points.length - 1].add(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset));
+    
         targetpoint = camera.w2c(targetpoint);
-
-        ctx.fillStyle = "#00ddff88";
+    
         ctx.beginPath();
         ctx.arc(...targetpoint.toArray(), camera.w2csX(5), 0, Math.PI * 2);
         ctx.fill();
-    });
-
-    soldiers.forEach(s => {
-        s.render();
-    });
-}
-
-function update() {
-    // Re-assign taget
-    if (input.mouse.left) {
-        paths.forEach((p, index) => {
-            let point = Vector.fromAngle(positions[index].angle + formationRotation, positions[index].length);
-
-            p.removePointFromStart();
-            p.removePointFromEnd();
-            p.addPointAtStart(soldiers[index].pos);
-            p.addPointAtEnd(camera.c2w(Vector.fromObject(input.mouse)).add(point).sub(new Vector(soldiers[index].centerOffset.x, soldiers[index].topOffset)));
-            soldiers[index].agent.lastPointIndex = 0;
-        });
     }
 
-    if (isKeyJustPressed("space")) {
-        paths.forEach((p, index) => {
-            p.removePointFromStart();
-            p.removePointFromEnd();
-            p.addPointAtStart(soldiers[index].pos);
-            p.addPointAtEnd( new Vector(randFloat(20, c.width/camera.realZoom-20), randFloat(20, c.height/camera.realZoom-100)) );
-            soldiers[index].agent.lastPointIndex = 0;
-        });
-    }
+    for (let s of soldiers) s.render();
 
-    if (isKeyPressed("a")) formationRotation -= 2;
-    if (isKeyPressed("d")) formationRotation += 2;
+    ctx.fillStyle = "#ff0000";
+    ctx.beginPath();
+    ctx.arc(...camera.w2cXY(0, 0), camera.w2csX(5), 0, Math.PI * 2);
+    ctx.fill();
 
-    if (isKeyPressed("w")) {
-        soldiers.forEach(s => {
-            s.agent.speed += 1;
-        });
-    };
-    if (isKeyPressed("s")) {
-        soldiers.forEach(s => {
-            s.agent.speed -= 1;
-        });
-    };
-
-    if (isKeyPressed("add")) camera.zoom += 0.1;
-    if (isKeyPressed("sub")) camera.zoom -= 0.1;
-
-    if (isKeyPressed("left")) camera.pos.x -= 10 / camera.realZoom;
-    if (isKeyPressed("right")) camera.pos.x += 10 / camera.realZoom;
-    if (isKeyPressed("up")) camera.pos.y -= 10 / camera.realZoom;
-    if (isKeyPressed("down")) camera.pos.y += 10 / camera.realZoom;
-
-    if (isKeyPressed("q")) camera.pos = new Vector();
-
-
-    // Update paths and agents on them
-    paths.forEach(p => {
-        p.update();
-    });
-
-    // Update soldiers
-    soldiers.forEach(s => {
-        s.update();
-    });
-
-    document.getElementById("text").textContent += "Speed: " + soldiers[0]?.agent.speed + "\n";
-
-    //camera.lookAt(new Vector(0, 0), true);
-    camera.update();
+    document.getElementById("text").textContent += `Speed: ${soldiers[0]?.agent?.speed ?? "?"}` + "\n";
 }

@@ -137,7 +137,7 @@ class Camera {
         if (this.settings.zoomSpeed == -1) {
             this.#realZoom = this.zoom;
         } else {
-            this.#realZoom = lerp(this.#realZoom, this.zoom, this.settings.zoomSpeed * delta);
+            this.#realZoom = lerp(this.#realZoom, this.zoom, Math.min(this.settings.zoomSpeed * delta, 1));
         }
 
         if (this.settings.glideSpeed == -1) {

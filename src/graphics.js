@@ -88,7 +88,7 @@ class Point extends Object2D {
         this.color = color;
     }
 
-    render(offset) {
+    render(offset = new Vector()) {
         ctx.fillStyle = this.color;
 
         ctx.beginPath();

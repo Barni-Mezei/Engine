@@ -15,17 +15,21 @@ setKeybind("d", "d");
 setKeybind("add", "\\+");
 setKeybind("sub", "\\-");
 
-settings.camera.slideSpeed = 0.05;
-settings.camera.zoomSpeed = 0.5;
+camera.settings.glideSpeed = 0.05;
+camera.settings.zoomSpeed = 0.5;
 
 camera.zoom = 0.75;
 
 addDebugOption("boxes", "Show boxes", "bool", false);
+addDebugOption("paths", "Show paths", "bool", false);
+setDebugMenu(true);
 
-/*Resource.loadTexture("../res/characters.png", "solider_idle", [0, 0, 32, 32]);
-Resource.loadTexture("../res/characters.png", "solider_walk", [0, 0, 32, 32], [4, 0.15]);
-Resource.loadTexture("../res/characters.png", "solider_jump", [32*4, 0, 32, 32], [4, 0.15]);
-Resource.loadFile("./settings.json", "settings");*/
+Resource.loadTexture("../res/characters.png", "soldier_idle", [0, 0, 32, 32]);
+Resource.loadTexture("../res/characters.png", "soldier_walk", [0, 0, 32, 32], [4, 0.15]);
+Resource.loadTexture("../res/characters.png", "soldier_jump", [32*4, 0, 32, 32], [4, 0.15]);
+Resource.loadFile("./settings.json", "settings");
+Resource.startLoading();
 
-Resource.maxLoadables = 1;
-Resource.loadFromFile("./imports.json").then(() => {Resource.maxLoadables -= 1; Resource.startLoading()} );
+
+/*Resource.maxLoadables = 1;
+Resource.loadFromFile("./imports.json").then(() => {Resource.maxLoadables -= 1; Resource.startLoading()} );*/

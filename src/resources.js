@@ -448,12 +448,12 @@ class Texture extends BaseResource {
 
         if (this.isAnimated) {
             this.animData.wrap = 0;
-            this.cropData = {
+            /*this.cropData = {
                 x: 0,
                 y: 0,
                 width: 16,
                 height: 16,
-            }
+            }*/
         } else {
             this.cropData = null;
         }
@@ -582,6 +582,8 @@ class Texture extends BaseResource {
      * @param {Number} margin Inset from width and height
      */
     render(x, y, width, height, rotation = 0, margin = 0) {
+
+
         if (this.isAnimated && this.isCropped) {
             // Draw cropped image, shifted by the animation frames
 
@@ -606,7 +608,6 @@ class Texture extends BaseResource {
             this.#drawImageRotated(x,y, [], width,height, rotation, margin);
         }
     }
-
 
     /**
      * Draws the image on to the canvas, with the specified properties
@@ -679,7 +680,7 @@ class Texture extends BaseResource {
             imageRenderData[3] *= -1;
         }*/
 
-        /*ctx.save();
+        ctx.save();
         
         // Apply rotation
         ctx.setTransform(1, 0, 0, 1, x, y);
@@ -690,9 +691,9 @@ class Texture extends BaseResource {
         ctx.imageSmoothingEnabled = !c.isPixelPerfect;
         ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
 
-        ctx.restore();*/
+        ctx.restore();
         
-        ctx.save();
+        /*ctx.save();
         
         // Apply rotation
         ctx.rotate(rotation * (Math.PI / 180));
@@ -702,7 +703,7 @@ class Texture extends BaseResource {
         ctx.imageSmoothingEnabled = !c.isPixelPerfect;
         ctx.drawImage(this.image, ...imageCropData, ...imageRenderData);
 
-        ctx.restore();
+        ctx.restore();*/
     }
 
     update() {
