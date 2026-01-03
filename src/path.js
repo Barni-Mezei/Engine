@@ -7,6 +7,10 @@
 TODO: Implement Get closest point on path method
 search 3 closest path points, and check the lines between
 them (2 lines) and return the closest point on those 2 lines
+
+new method:
+- check all line segments for closest point, return closest point
+
 */
 
 class Path {
@@ -92,6 +96,46 @@ class Path {
     getPoint(index) {
         if (index < 0 || index > this.points.length-1) return null;
         return this.points[index];
+    }
+
+    /**
+     * Returns with the closest point on the path
+     * @returns {Vector|null} A world space coordinate of a point, that is on the path
+     * and is the closest to the specified input position. If no point was found, this function will return null
+     */
+    getClosestPoint(pos) {
+        if (this.points.length == 0) return null;
+        if (this.points.length == 1) return this.points[0].copy();
+        if (this.points.length == 2) {
+            return closestPointOnLine(this.points[0], this.points[1], pos);
+        }
+
+        // Min. 3 points are in the path
+        let closestPoint = new Vector();
+        let closestPointDistance = Infinity;
+
+        for (let i = 0; i < this.points.length - 1; i++) {
+            console.group(i, pos);
+            console.log("closest dist", closestPointDistance, "closest point", closestPoint);
+            console.log("check", this.points[i], this.points[i+1]);
+
+            let currentPoint = closestPointOnLine(this.points[i], this.points[i+1], pos.copy());
+            let currentDistance = currentPoint.sub(pos.copy()).length;
+
+            console.log("curr dist", currentDistance, "curr point", currentPoint);
+
+            if (currentDistance < closestPointDistance) {
+                closestPointDistance = currentDistance + 0;
+                closestPoint = currentPoint.copy();
+                console.log("Updated");
+            }
+
+            console.groupEnd();
+        }
+
+        console.log("END:", closestPointDistance, closestPoint);
+
+        return closestPoint;
     }
 
     /**

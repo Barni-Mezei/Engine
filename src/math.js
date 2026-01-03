@@ -54,6 +54,22 @@ function distance(x1,y1, x2,y2) {
 }
 
 /**
+ * Returns with a position on the line, that is closest to the specified point
+ * @param {Vector} lineStart One end of the line
+ * @param {Vector} lineEnd The other end of the line
+ * @param {Vector} point The point to get the closest point to
+ * @returns {Vector} The closest point on the line
+ */
+function closestPointOnLine(lineStart, lineEnd, point) {
+    let diff = lineEnd.sub(lineStart);
+    let distance = Vector.dot(diff, point) / diff.length;
+
+    diff = diff.unit(clamp(distance, 0, diff.length));
+
+    return lineStart.add(diff);
+}
+
+/**
  * Constrins the given number in to a range.
  * @param {Number} value The value to constrain 
  * @param {Number} min Minimum allowed value

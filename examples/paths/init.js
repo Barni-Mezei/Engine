@@ -27,6 +27,8 @@ setDebugMenu(true);
 Resource.loadTexture("../res/characters.png", "soldier_idle", [0, 0, 32, 32]);
 Resource.loadTexture("../res/characters.png", "soldier_walk", [0, 0, 32, 32], [4, 0.15]);
 Resource.loadTexture("../res/characters.png", "soldier_jump", [32*4, 0, 32, 32], [4, 0.15]);
+Resource.loadTexture("../res/shadow.png", "shadow", [0, 0, 32, 32]);
+Resource.loadTexture("../res/shadow.png", "shadow_walk", [0, 0, 32, 32], [2, 0.15]);
 Resource.loadFile("./settings.json", "settings");
 Resource.startLoading();
 

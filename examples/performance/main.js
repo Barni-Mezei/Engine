@@ -263,4 +263,4 @@ mapOrFor() // For
 objectOrClass() // Reading: class, updating in place: class
 arrayCreation() // Array(<size>).fill(<value>)
 
-// todo: static method or prototype.a() if faster to call, because static is still ijnstantiated
+// todo: static method or prototype.a() if faster to call, because static methods are might still be instantiated

@@ -12,7 +12,7 @@ let following = false;
 
 let currentTileId = ""; // Name of the current tile
 
-const GRID_SIZE = new Vector(10);
+const GRID_SIZE = new Vector(50);
 let collapsedTiles = 0;
 let DONE = false;
 let ATTEMPTS = 0;
@@ -333,8 +333,6 @@ function render(delta) {
     }
 
     player.render(delta);
-
-    ctx.drawImage(player.animations.walk.image, c.width - 100, 0, 100, 100);
 
     // Tile cursor
     ctx.strokeStyle = "#00ddff";

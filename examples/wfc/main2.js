@@ -334,7 +334,6 @@ function iterate() {
         tileWeights[key] /= tileWeightSum;
     }
 
-    // TODO: Use weighted random
     //let chosenTile = possibleValues[randInt(0, possibleValues.length - 1)];
     let chosenTile = weightedRandom(tileWeights);
 
